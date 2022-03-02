@@ -1,0 +1,32 @@
+item { 
+	name:'bike_front'
+	id:1
+}
+item { 
+	name:'bike_rear'
+	id:2
+}
+item { 
+	name:'bus_front'
+	id:3
+}
+item { 
+	name:'bus_rear'
+	id:4
+}
+item { 
+	name:'car_front'
+	id:5
+}
+item { 
+	name:'car_rear'
+	id:6
+}
+item { 
+	name:'truck_front'
+	id:7
+}
+item { 
+	name:'truck_rear'
+	id:8
+}
