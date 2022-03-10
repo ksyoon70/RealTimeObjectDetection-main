@@ -34,8 +34,9 @@ CUSTOM_MODEL_NAME = 'my_ssd_mobnet'
 
 
 
-CLASS_NAMES = ['bike_front','bike_rear','bus_front','bus_rear','car_front','car_rear','truck_front','truck_rear']
+#CLASS_NAMES = ['bike_front','bike_rear','bus_front','bus_rear','car_front','car_rear','truck_front','truck_rear']
 #CLASS_NAMES = ['cat','dog']
+CLASS_NAMES = ['car','plate']
 
 N = len(CLASS_NAMES)
 

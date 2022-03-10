@@ -2,3 +2,25 @@
 Tensorflow/workspace/images/cat_dog/test/
 
 Tensorflow/workspace/images/tracking/test/
+
+.spyproject/
+
+.vscode/
+
+Tensorflow/workspace/images/car-plate/test/
+
+Tensorflow/workspace/images/car-plate/result/
+
+*.record
+
+Tensorflow/workspace/models/my_ssd_mobnet/train/
+
+Tensorflow/workspace/images/tracking/result/
+
+Tensorflow/workspace/images/tracking/test1/
+
+*.index
+
+*.data-00000-of-00001
+
+Tensorflow/workspace/models/my_ssd_mobnet/checkpoint

@@ -25,7 +25,7 @@ import time
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-dataset_category='tracking'
+dataset_category='car-plate'
 test_dir_name = 'test'
 show_image = True
 save_image = True
