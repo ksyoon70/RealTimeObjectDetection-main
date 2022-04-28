@@ -16,11 +16,23 @@ from google.protobuf import text_format
 import tensorflow.compat.v1 as tfv1
 import pandas as pd
 
+#-----------------------------------------------------------------------
+# 사용자가 수정하는 부분이다.
+PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
+
+
+CUSTOM_MODEL_NAME = 'my_ssd_mobnet' 
+
+fsLabelFileName = "./LPR_Labels2.txt"  #라벨 파일이름
+filterFileName = "LPR_Filtermap.txt"  #필터 맵 파일이다.
+dataset_category='plateimage'
+#-----------------------------------------------------------------------
+
 ROOT_DIR = os.getcwd()
 sys.path.append(ROOT_DIR) 
 
 ROOT_OF_ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-dataset_category='plate'
+
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
 SCRIPTS_PATH = os.path.join(ROOT_DIR,'Tensorflow','scripts')
 APIMODEL_PATH = os.path.join(ROOT_OF_ROOT,'models') 
@@ -31,15 +43,42 @@ PRETRAINED_MODEL_PATH = os.path.join(WORKSPACE_PATH , 'pre-trained-models')
 CONFIG_PATH = os.path.join( MODEL_PATH ,'my_ssd_mobnet','pipeline.config')
 CHECKPOINT_PATH = os.path.join( MODEL_PATH , 'my_ssd_mobnet')
 
-#-----------------------------------------------------------------------
-PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
-#-----------------------------------------------------------------------
 
-CUSTOM_MODEL_NAME = 'my_ssd_mobnet' 
 
-fsLabelFileName = "./LPR_Plate_Labels.txt"
 fLabels = pd.read_csv(fsLabelFileName, header = None )
 CLASS_NAMES = fLabels[0].values.tolist()
+
+
+#필터맵을 통하여 라별 변환할 항목을 읽는다.
+FILTERMAP_FILE_PATH = os.path.join(ROOT_DIR,filterFileName)
+
+bFilterMap = False
+if  not os.path.exists(FILTERMAP_FILE_PATH):
+    print("FilterMap File {0} isn't exists".format(FILTERMAP_FILE_PATH))
+else :
+    bFilterMap = True
+    
+if bFilterMap :
+    ConvMap = {}
+    cLabels = pd.read_csv(FILTERMAP_FILE_PATH, header = None )
+
+    for i, value in enumerate(cLabels[0]):
+        ConvMap[value] = cLabels[1][i]
+    
+     #필터에 있는 내용이면 레이블 이름을 변경한다.
+    for index, label in enumerate(CLASS_NAMES) :
+        
+        if label  in ConvMap:
+            CLASS_NAMES[index] = ConvMap[label]
+    
+    new_list = []
+    for v in CLASS_NAMES:
+        if v not in new_list:
+            new_list.append(v)
+    CLASS_NAMES = new_list
+
+#라벨 클래스 이름에서 필터에 있는 내용이 있으면 변환한다.
+
 
 #CLASS_NAMES = ['bike_front','bike_rear','bus_front','bus_rear','car_front','car_rear','truck_front','truck_rear']
 #CLASS_NAMES = ['cat','dog']
