@@ -25,7 +25,7 @@ import time
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-dataset_category='car-plate'
+dataset_category='plate'
 test_dir_name = 'test'
 show_image = True
 save_image = True
@@ -39,7 +39,7 @@ sys.path.append(ROOT_DIR)
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
 ANNOTATION_PATH = os.path.join(WORKSPACE_PATH,'annotations')
 IMAGE_PATH =  os.path.join(WORKSPACE_PATH,'images',dataset_category)
-MODEL_PATH = os.path.join(WORKSPACE_PATH , 'models')
+MODEL_PATH = os.path.join(WORKSPACE_PATH , 'models',dataset_category)
 CONFIG_PATH = os.path.join( MODEL_PATH ,'my_ssd_mobnet','pipeline.config')
 CHECKPOINT_PATH = os.path.join( MODEL_PATH , 'my_ssd_mobnet')
 
@@ -59,7 +59,9 @@ detection_model = model_builder.build(model_config=configs['model'], is_training
 
 # Restore checkpoint
 ckpt = tf.compat.v2.train.Checkpoint(model=detection_model)
-ckpt.restore(os.path.join(CHECKPOINT_PATH, 'ckpt-11')).expect_partial()
+#ckpt.restore(os.path.join(CHECKPOINT_PATH, 'ckpt-201')).expect_partial()
+#restore latest checkpoint
+ckpt.restore(tf.train.latest_checkpoint(CHECKPOINT_PATH))
 
 
 
@@ -80,15 +82,40 @@ def drawImage(image_path):
     plt.imshow(imgRGB)
     plt.pause(0.5)
     plt.show()
+    
+    
+def imread(filename, flags=cv2.IMREAD_COLOR, dtype=np.uint8):
+    try:
+        n = np.fromfile(filename, dtype)
+        img = cv2.imdecode(n, flags)
+        return img
+    except Exception as e:
+        print(e)
+        return None
 
+def imwrite(filename, img, params=None):
+    try:
+        ext = os.path.splitext(filename)[1]
+        result, n = cv2.imencode(ext, img, params)
+
+        if result:
+            with open(filename, mode='w+b') as f:
+                n.tofile(f)
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(e)
+        return False    
+    
 fileNum = len(os.listdir(images_dir))
 cnt = 0;
 for filename in os.listdir(images_dir):
     cnt += 1
     image_path = os.path.join(images_dir,filename)
     if os.path.exists(image_path) :
-        image  = cv2.imread(image_path)
-        imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        imgRGB  = imread(image_path)
+        #imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image_np = np.array(imgRGB)
         input_tensor = tf.convert_to_tensor(np.expand_dims(image_np, 0), dtype=tf.float32)
         detections = detect_fn(input_tensor)

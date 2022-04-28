@@ -1,1 +1,117 @@
-python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\my_ssd_mobnet\pipeline.config --num_train_steps=10000
+python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plate\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --num_train_steps=10000
+
+Tf2
+1.)
+python ..\models\research\object_detection\exporter_main_v2.py --input_type image_tensor --pipeline_config_path Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\plate\my_ssd_mobnet --output_directory .\exported-models\my_model
+
+2.)
+python ..\models\research\object_detection\exporter_main_v2.py --input_type float_image_tensor --pipeline_config_path Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\plate\my_ssd_mobnet --output_directory .\exported-models\my_model
+
+Tf1
+python ..\models\research\object_detection\export_inference_graph.py --input_type image_tensor --pipeline_config_path Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --trained_checkpoint_prefix Tensorflow\workspace\models\car-plate\my_ssd_mobnet\ckpt-11 --output_directory inference_graph
+
+
+
+saved_model_cli.exe show --dir c:\SPB_Data\RealTimeObjectDetection-main\exported-models\my_model\saved_model --tag_set serve --signature_def serving_default
+The given SavedModel SignatureDef contains the following input(s):
+  inputs['input_tensor'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, -1, -1, 3)
+      name: serving_default_input_tensor:0
+The given SavedModel SignatureDef contains the following output(s):
+  outputs['detection_anchor_indices'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 10)
+      name: StatefulPartitionedCall:0
+  outputs['detection_boxes'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 10, 4)
+      name: StatefulPartitionedCall:1
+  outputs['detection_classes'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 10)
+      name: StatefulPartitionedCall:2
+  outputs['detection_multiclass_scores'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 10, 11)
+      name: StatefulPartitionedCall:3
+  outputs['detection_scores'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 10)
+      name: StatefulPartitionedCall:4
+  outputs['num_detections'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1)
+      name: StatefulPartitionedCall:5
+  outputs['raw_detection_boxes'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, -1, 4)
+      name: StatefulPartitionedCall:6
+  outputs['raw_detection_scores'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, -1, 11)
+      name: StatefulPartitionedCall:7
+Method name is: tensorflow/serving/predict
+
+(object_detection_api) C:\venvs\object_detection_api\Scripts>
+
+
+
+(object_detection_api) C:\venvs\object_detection_api\Scripts>saved_model_cli.exe show --dir c:\SPB_Data\RealTimeObjectDetection-main\exported-models\my_model\saved_model --tag_set serve --signature_def serving_default
+The given SavedModel SignatureDef contains the following input(s):
+  inputs['input_tensor'] tensor_info:
+      dtype: DT_UINT8
+      shape: (1, -1, -1, 3)
+      name: serving_default_input_tensor:0
+The given SavedModel SignatureDef contains the following output(s):
+  outputs['detection_anchor_indices'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (1, 10)
+      name: StatefulPartitionedCall:0
+  outputs['detection_boxes'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (1, 10, 4)
+      name: StatefulPartitionedCall:1
+  outputs['detection_classes'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (1, 10)
+      name: StatefulPartitionedCall:2
+  outputs['detection_multiclass_scores'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (1, 10, 11)
+      name: StatefulPartitionedCall:3
+  outputs['detection_scores'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (1, 10)
+      name: StatefulPartitionedCall:4
+  outputs['num_detections'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (1)
+      name: StatefulPartitionedCall:5
+  outputs['raw_detection_boxes'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (1, 85360, 4)
+      name: StatefulPartitionedCall:6
+  outputs['raw_detection_scores'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (1, 85360, 11)
+      name: StatefulPartitionedCall:7
+Method name is: tensorflow/serving/predict
+
+(object_detection_api) C:\venvs\object_detection_api\Scripts>
+
+
+
+python -m tf2onnx.convert --saved-model .\exported-models\my_model\saved-model --opset 13 --output model.onnx
+
+
+
+
+
+
+
+
+
+
+
+

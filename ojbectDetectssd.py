@@ -6,6 +6,7 @@ Created on Mon Feb 21 19:33:30 2022
 """
 import os,sys
 import cv2
+from shutil import copyfile
 import time
 import uuid
 import tensorflow as tf
@@ -13,30 +14,45 @@ from object_detection.utils import config_util
 from object_detection.protos import pipeline_pb2
 from google.protobuf import text_format
 import tensorflow.compat.v1 as tfv1
+import pandas as pd
 
 ROOT_DIR = os.getcwd()
 sys.path.append(ROOT_DIR) 
 
 ROOT_OF_ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-
+dataset_category='plate'
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
 SCRIPTS_PATH = os.path.join(ROOT_DIR,'Tensorflow','scripts')
 APIMODEL_PATH = os.path.join(ROOT_OF_ROOT,'models') 
 ANNOTATION_PATH = os.path.join(WORKSPACE_PATH,'annotations')
 IMAGE_PATH =  os.path.join(WORKSPACE_PATH,'images')
-MODEL_PATH = os.path.join(WORKSPACE_PATH , 'models')
+MODEL_PATH = os.path.join(WORKSPACE_PATH ,'models',dataset_category)
 PRETRAINED_MODEL_PATH = os.path.join(WORKSPACE_PATH , 'pre-trained-models')
 CONFIG_PATH = os.path.join( MODEL_PATH ,'my_ssd_mobnet','pipeline.config')
 CHECKPOINT_PATH = os.path.join( MODEL_PATH , 'my_ssd_mobnet')
 
+#-----------------------------------------------------------------------
+PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
+#-----------------------------------------------------------------------
 
 CUSTOM_MODEL_NAME = 'my_ssd_mobnet' 
 
-
+fsLabelFileName = "./LPR_Plate_Labels.txt"
+fLabels = pd.read_csv(fsLabelFileName, header = None )
+CLASS_NAMES = fLabels[0].values.tolist()
 
 #CLASS_NAMES = ['bike_front','bike_rear','bus_front','bus_rear','car_front','car_rear','truck_front','truck_rear']
 #CLASS_NAMES = ['cat','dog']
-CLASS_NAMES = ['car','plate']
+#CLASS_NAMES = ['car','plate']
+
+
+def createFolder(directory):
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError:
+        print ('Error: Creating directory. ' +  directory)
+
 
 N = len(CLASS_NAMES)
 
@@ -52,6 +68,20 @@ with open(ANNOTATION_PATH + '\label_map.pbtxt', 'w') as f:
 
 
 CONFIG_PATH = os.path.join(MODEL_PATH, CUSTOM_MODEL_NAME, 'pipeline.config')
+
+if not os.path.isdir(os.path.join(MODEL_PATH, CUSTOM_MODEL_NAME)):
+    createFolder(MODEL_PATH)
+    createFolder(os.path.join(MODEL_PATH, CUSTOM_MODEL_NAME))
+    
+if not os.path.exists(CONFIG_PATH) :
+    src_file = os.path.join(PRETRAINED_MODEL_PATH,PRETRAINED_MODEL_NAME,'pipeline.config')
+    dst_file = CONFIG_PATH
+    if os.path.exists(src_file):
+        copyfile(src_file,dst_file)
+    else:
+        print("Error no {0} exists".format(src_file))
+        sys.exit()
+
 config = config_util.get_configs_from_pipeline_file(CONFIG_PATH)
 
 
@@ -63,7 +93,7 @@ with tf.io.gfile.GFile(CONFIG_PATH, "r") as f:
     
 pipeline_config.model.ssd.num_classes = len(CLASS_NAMES)
 pipeline_config.train_config.batch_size = 4
-pipeline_config.train_config.fine_tune_checkpoint = os.path.join(PRETRAINED_MODEL_PATH,'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8','checkpoint','ckpt-0')
+pipeline_config.train_config.fine_tune_checkpoint = os.path.join(PRETRAINED_MODEL_PATH,PRETRAINED_MODEL_NAME,'checkpoint','ckpt-0')
 pipeline_config.train_config.fine_tune_checkpoint_type = "detection"
 pipeline_config.train_input_reader.label_map_path= os.path.join(ANNOTATION_PATH,'label_map.pbtxt')
 pipeline_config.train_input_reader.tf_record_input_reader.input_path[:] = [os.path.join(ANNOTATION_PATH,'train.record')]

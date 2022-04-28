@@ -34,19 +34,29 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'valid' # train or valid
-dataset_category='car-plate'
+usage = 'train' # train or valid
+dataset_category='plate'
 label_file = 'label_map.pbtxt'
+fsLabelFileName = "LPR_Plate_Labels.txt"
 #========================
 
 ROOT_DIR = os.path.abspath("../../")
 sys.path.append(ROOT_DIR) 
 
+#레이블을 읽어 들여서 필요한 클래스를 파악한다.
+LABEL_FILE_PATH = os.path.join(ROOT_DIR,fsLabelFileName)
+if  not os.path.exists(LABEL_FILE_PATH):
+    print("Error no {0} exists".format(LABEL_FILE_PATH))
+    sys.exit()
+    
+fLabels = pd.read_csv(LABEL_FILE_PATH, header = None )
+CLASS_NAMES = fLabels[0].values.tolist()
+
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
 SCRIPTS_PATH = os.path.join(ROOT_DIR,'Tensorflow','scripts')
 ANNOTATION_PATH = os.path.join(WORKSPACE_PATH,'annotations')
 IMAGE_PATH =  os.path.join(WORKSPACE_PATH,'images',dataset_category)
-MODEL_PATH = os.path.join(WORKSPACE_PATH , 'models')
+MODEL_PATH = os.path.join(WORKSPACE_PATH , 'models',dataset_category)
 PRETRAINED_MODEL_PATH = os.path.join(WORKSPACE_PATH , 'pre-trained-models')
 CONFIG_PATH = os.path.join( MODEL_PATH ,'my_ssd_mobnet','pipeline.config')
 CHECKPOINT_PATH = os.path.join( MODEL_PATH , 'my_ssd_mobnet')
@@ -149,37 +159,41 @@ def json_to_csv(path):
             for item, shape in enumerate(json_data['shapes']):
                 points = shape['points']
                 shape_type = shape['shape_type']
-                arr =np.array(points)
-                if shape_type == 'polygon':
-                    xmin = np.min(arr[:,0])
-                    ymin = np.min(arr[:,1])
-                    xmax = np.max(arr[:,0])
-                    ymax = np.max(arr[:,1])
-                    coors = [xmin, ymax]
-                    points.insert(1, coors)
-                    coors = [xmax, ymin]
-                    points.insert(3, coors)
-                    boxes.append(points)
-                elif shape_type == 'rectangle':
-                    xmin = np.min(arr[:,0])
-                    ymin = np.min(arr[:,1])
-                    xmax = np.max(arr[:,0])
-                    ymax = np.max(arr[:,1])
-                    coors = [xmin, ymax]
-                    points.insert(1, coors)
-                    coors = [xmax, ymin]
-                    points.insert(3, coors)
-                    boxes.append(points)
+                label = shape['label']
+                if any(item == label for item in CLASS_NAMES) :
+                    arr =np.array(points)
+                    if shape_type == 'polygon':
+                        xmin = np.min(arr[:,0])
+                        ymin = np.min(arr[:,1])
+                        xmax = np.max(arr[:,0])
+                        ymax = np.max(arr[:,1])
+                        coors = [xmin, ymax]
+                        points.insert(1, coors)
+                        coors = [xmax, ymin]
+                        points.insert(3, coors)
+                        boxes.append(points)
+                    elif shape_type == 'rectangle':
+                        xmin = np.min(arr[:,0])
+                        ymin = np.min(arr[:,1])
+                        xmax = np.max(arr[:,0])
+                        ymax = np.max(arr[:,1])
+                        coors = [xmin, ymax]
+                        points.insert(1, coors)
+                        coors = [xmax, ymin]
+                        points.insert(3, coors)
+                        boxes.append(points)
+                    else:
+                        xmin = np.min(arr[:,0])
+                        ymin = np.min(arr[:,1])
+                        xmax = np.max(arr[:,0])
+                        ymax = np.max(arr[:,1])
+                        coors = [xmin, ymax]
+                        points.insert(1, coors)
+                        coors = [xmax, ymin]
+                        points.insert(3, coors)
+                        boxes.append(points)
                 else:
-                    xmin = np.min(arr[:,0])
-                    ymin = np.min(arr[:,1])
-                    xmax = np.max(arr[:,0])
-                    ymax = np.max(arr[:,1])
-                    coors = [xmin, ymax]
-                    points.insert(1, coors)
-                    coors = [xmax, ymin]
-                    points.insert(3, coors)
-                    boxes.append(points)
+                    continue
                 value= (json_data['imagePath'],width,height,shape['label'],xmin,ymin,xmax,ymax)
                 json_list.append(value)
     

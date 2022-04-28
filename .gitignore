@@ -24,3 +24,15 @@ Tensorflow/workspace/images/tracking/test1/
 *.data-00000-of-00001
 
 Tensorflow/workspace/models/my_ssd_mobnet/checkpoint
+
+exported-models/
+
+inference_graph/
+
+*.onnx
+
+Tensorflow/workspace/annotations/label_map.pbtxt
+
+Tensorflow/workspace/images/
+
+Tensorflow/workspace/models/

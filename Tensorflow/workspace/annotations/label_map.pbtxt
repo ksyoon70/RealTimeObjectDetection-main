@@ -1,8 +1,0 @@
-item { 
-	name:'car'
-	id:1
-}
-item { 
-	name:'plate'
-	id:2
-}
