@@ -1,11 +1,13 @@
 python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plate\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --num_train_steps=10000
 
+python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plateimage\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --num_train_steps=100000
+
 Tf2
 1.)
-python ..\models\research\object_detection\exporter_main_v2.py --input_type image_tensor --pipeline_config_path Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\plate\my_ssd_mobnet --output_directory .\exported-models\my_model
+python ..\models\research\object_detection\exporter_main_v2.py --input_type image_tensor --pipeline_config_path Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\plateimage\my_ssd_mobnet --output_directory .\exported-models\my_model
 
-2.)
-python ..\models\research\object_detection\exporter_main_v2.py --input_type float_image_tensor --pipeline_config_path Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\plate\my_ssd_mobnet --output_directory .\exported-models\my_model
+2.) onnx용으로는 input_type이 float_image_tensor로 되어야 함.
+python ..\models\research\object_detection\exporter_main_v2.py --input_type float_image_tensor --pipeline_config_path Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\plateimage\my_ssd_mobnet --output_directory .\exported-models\my_model
 
 Tf1
 python ..\models\research\object_detection\export_inference_graph.py --input_type image_tensor --pipeline_config_path Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --trained_checkpoint_prefix Tensorflow\workspace\models\car-plate\my_ssd_mobnet\ckpt-11 --output_directory inference_graph
@@ -101,8 +103,34 @@ Method name is: tensorflow/serving/predict
 (object_detection_api) C:\venvs\object_detection_api\Scripts>
 
 
-
+tensorflow --opset 11까지만 지원한다는 얘기가 있음.
 python -m tf2onnx.convert --saved-model .\exported-models\my_model\saved-model --opset 13 --output model.onnx
+
+python -m tf2onnx.convert --saved-model C:\SPB_Data\RealTimeObjectDetection-main\exported-models\my_model\saved_model --opset 11 --fold_const --output model.onnx
+
+
+#debug command
+debugfile("../models/research/object_detection/model_main_tf2.py", "--model_dir=Tensorflow/workspace/models/plateimage/my_ssd_mobnet --pipeline_config_path=Tensorflow/workspace/models/plateimage/my_ssd_mobnet/pipeline.config --num_train_steps=10000")
+
+
+
+tensorboard --logdir ./Tensorflow/workspace/models/plateimage/my_ssd_mobnet/train
+
+
+trtexec --onnx=model.onnx --saveEngine=model.trt --verbose
+
+
+#object detection model 사용시
+onnx 파일 만들기...
+python .\tensorflow_object_detection_api\create_onnx.py --pipeline_config .\Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --saved_model .\exported-models\my_model\saved_model --onnx .\exported-models\my_model\model.onnx
+tensorrt 파일 만들기
+python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\my_model\model.onnx --engine .\exported-models\my_model\engine.trt --precision fp16
+inference 테스트
+
+python .\tensorflow_object_detection_api\infer.py --engine .\exported-models\my_model\engine.trt --input .\Tensorflow\workspace\images\plateimage\test --output .\Tensorflow\workspace\images\plateimage\result --preprocessor fixed_shape_resizer --labels .\tensorflow_object_detection_api\plateimage_label.txt
+
+
+
 
 
 

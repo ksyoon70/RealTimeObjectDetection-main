@@ -36,3 +36,5 @@ Tensorflow/workspace/annotations/label_map.pbtxt
 Tensorflow/workspace/images/
 
 Tensorflow/workspace/models/
+
+__pycache__/

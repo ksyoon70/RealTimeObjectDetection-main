@@ -25,7 +25,7 @@ import time
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-dataset_category='plate'
+dataset_category='plateimage'
 test_dir_name = 'test'
 show_image = True
 save_image = True
@@ -59,7 +59,7 @@ detection_model = model_builder.build(model_config=configs['model'], is_training
 
 # Restore checkpoint
 ckpt = tf.compat.v2.train.Checkpoint(model=detection_model)
-#ckpt.restore(os.path.join(CHECKPOINT_PATH, 'ckpt-201')).expect_partial()
+#ckpt.restore(os.path.join(CHECKPOINT_PATH, 'ckpt-101')).expect_partial()
 #restore latest checkpoint
 ckpt.restore(tf.train.latest_checkpoint(CHECKPOINT_PATH))
 
@@ -139,8 +139,8 @@ for filename in os.listdir(images_dir):
                     detections['detection_scores'],
                     category_index,
                     use_normalized_coordinates=True,
-                    max_boxes_to_draw=5,
-                    min_score_thresh=.5,
+                    max_boxes_to_draw=20,
+                    min_score_thresh=.10,
                     agnostic_mode=False)
         
         

@@ -211,13 +211,14 @@ def json_to_csv(path):
                         points.insert(3, coors)
                         boxes.append(points)
                         
-                        #필터에 있는 내용이면 레이블 이름을 변경한다.
-                        if label  in ConvMap:
-                            shape['label'] = ConvMap[label]
+                    #필터에 있는 내용이면 레이블 이름을 변경한다.
+                    if label  in ConvMap:
+                        shape['label'] = ConvMap[label]
                 else:
                     continue
                 value= (json_data['imagePath'],width,height,shape['label'],xmin,ymin,xmax,ymax)
                 json_list.append(value)
+                print(value)
     
     column_name = ['filename', 'width', 'height',
                    'class', 'xmin', 'ymin', 'xmax', 'ymax']
