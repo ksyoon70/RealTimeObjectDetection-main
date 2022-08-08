@@ -34,10 +34,10 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'train' # train or valid
-dataset_category='plate'
+usage = 'valid' # train or valid
+dataset_category='tracking'
 label_file = 'label_map.pbtxt'
-fsLabelFileName = "LPR_Plate_Labels.txt"
+fsLabelFileName = "tracking_Label.txt"
 #========================
 
 ROOT_DIR = os.path.abspath("../../")

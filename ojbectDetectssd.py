@@ -18,14 +18,16 @@ import pandas as pd
 
 #-----------------------------------------------------------------------
 # 사용자가 수정하는 부분이다.
-PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
-
+#여기서 사용할 모델을 고른다.
+#PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
+#PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8'
+PRETRAINED_MODEL_NAME = 'ssd_resnet50_v1_fpn_640x640_coco17_tpu-8'
 
 CUSTOM_MODEL_NAME = 'my_ssd_mobnet' 
 
-fsLabelFileName = "./LPR_Labels2.txt"  #라벨 파일이름
-filterFileName = "LPR_Filtermap.txt"  #필터 맵 파일이다.
-dataset_category='plateimage'
+fsLabelFileName = "./tracking_Label.txt"  #라벨 파일이름
+filterFileName =  "filter.map"  #"LPR_Filtermap.txt"  #필터 맵 파일이다. 사용하지않으면 존재하지 않는 파일명을 넣는다.
+dataset_category='tracking'
 #-----------------------------------------------------------------------
 
 ROOT_DIR = os.getcwd()

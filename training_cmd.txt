@@ -2,6 +2,7 @@ python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorf
 
 python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plateimage\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --num_train_steps=100000
 
+check point를 saved model로 변환
 Tf2
 1.)
 python ..\models\research\object_detection\exporter_main_v2.py --input_type image_tensor --pipeline_config_path Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\plateimage\my_ssd_mobnet --output_directory .\exported-models\my_model

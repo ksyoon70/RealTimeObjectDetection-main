@@ -2,7 +2,7 @@
 """
 Created on Mon Feb 21 19:50:19 2022
 
-@author: headway
+@author: headway 
 """
 import os,sys
 import cv2
@@ -25,7 +25,7 @@ import time
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-dataset_category='plateimage'
+dataset_category='tracking'
 test_dir_name = 'test'
 show_image = True
 save_image = True
