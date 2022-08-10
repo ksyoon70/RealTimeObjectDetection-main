@@ -1,0 +1,8 @@
+bike_front,이륜차전면
+bike_rear,이륜차후면
+bus_front,버스전면
+bus_rear,버스후면
+car_front,승용차전면
+car_rear,승용차후면
+truck_front,트럭전면
+truck_rear,트럭후면

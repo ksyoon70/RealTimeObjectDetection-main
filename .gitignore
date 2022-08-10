@@ -38,3 +38,13 @@ Tensorflow/workspace/images/
 Tensorflow/workspace/models/
 
 __pycache__/
+
+*.h5
+
+char_model/
+
+hreg_model/
+
+vreg_model/
+
+Tensorflow/workspace/pre-trained-models/

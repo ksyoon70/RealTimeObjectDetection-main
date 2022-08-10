@@ -1,0 +1,40 @@
+item { 
+	name:'type1'
+	id:1
+}
+item { 
+	name:'type2'
+	id:2
+}
+item { 
+	name:'type3'
+	id:3
+}
+item { 
+	name:'type4'
+	id:4
+}
+item { 
+	name:'type5'
+	id:5
+}
+item { 
+	name:'type6'
+	id:6
+}
+item { 
+	name:'type7'
+	id:7
+}
+item { 
+	name:'type8'
+	id:8
+}
+item { 
+	name:'type9'
+	id:9
+}
+item { 
+	name:'type10'
+	id:10
+}

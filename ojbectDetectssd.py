@@ -21,13 +21,13 @@ import pandas as pd
 #여기서 사용할 모델을 고른다.
 #PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
 #PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8'
-PRETRAINED_MODEL_NAME = 'ssd_resnet50_v1_fpn_640x640_coco17_tpu-8'
+PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
 
 CUSTOM_MODEL_NAME = 'my_ssd_mobnet' 
 
-fsLabelFileName = "./tracking_Label.txt"  #라벨 파일이름
-filterFileName =  "filter.map"  #"LPR_Filtermap.txt"  #필터 맵 파일이다. 사용하지않으면 존재하지 않는 파일명을 넣는다.
-dataset_category='tracking'
+fsLabelFileName =  "LPR_Labels2.txt" #"./LPR_Plate_Labels.txt"  #라벨 파일이름
+filterFileName =  'LPR_Filtermap.txt'  #None #"filter.map"  #"LPR_Filtermap.txt"  #필터 맵 파일이다. 사용하지않으면 존재하지 않는 파일명을 넣는다.
+dataset_category='plateimage'
 #-----------------------------------------------------------------------
 
 ROOT_DIR = os.getcwd()
@@ -52,13 +52,14 @@ CLASS_NAMES = fLabels[0].values.tolist()
 
 
 #필터맵을 통하여 라별 변환할 항목을 읽는다.
-FILTERMAP_FILE_PATH = os.path.join(ROOT_DIR,filterFileName)
-
 bFilterMap = False
-if  not os.path.exists(FILTERMAP_FILE_PATH):
-    print("FilterMap File {0} isn't exists".format(FILTERMAP_FILE_PATH))
-else :
-    bFilterMap = True
+if filterFileName :
+    FILTERMAP_FILE_PATH = os.path.join(ROOT_DIR,filterFileName)
+
+    if  not os.path.exists(FILTERMAP_FILE_PATH):
+        print("FilterMap File {0} isn't exists".format(FILTERMAP_FILE_PATH))
+    else :
+        bFilterMap = True
     
 if bFilterMap :
     ConvMap = {}
