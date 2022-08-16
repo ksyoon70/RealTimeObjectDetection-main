@@ -7,6 +7,7 @@ Created on Tue Mar 15 14:19:22 2022
 
 import os,sys
 import pandas as pd
+import cv2
 import argparse
 import json
 from collections import OrderedDict
@@ -324,8 +325,116 @@ def createFolder(directory):
         print ('Error: Creating directory. ' +  directory)
     
             
+#Object Detection API에서의  번호/문자 인식 내용을 추출 한다.    
+def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC) :
     
+    objTable = []
+    
+    num_detections = detect['num_detections']
+    
+    for i in range(0,num_detections) :
+        box = detect['detection_boxes'][i]
+        class_id = detect['detection_classes'][i] + 1
+        score = detect['detection_scores'][i]
+        item = [class_id, score, box[0],box[1],box[2],box[3]]
+        objTable.append(item)
+    
+    objTable = np.array(objTable)
+    
+    plate_str = "" # 번호판 문자
+    if(num_detections > 1):
+        plate2line = False
+        # 번호판 상하단 구분 위한 코드
+        ref = objTable[:,2].mean(axis = 0)
+        type = platetype_index
+        if type in twolinePlate :
+            plate2line = True
+            print("2line")
+        else:
+            print("1line")
+        plateTable = []
+        if plate2line :
+            # 2line 번호판이면...
+            # 1line 과 2line으로 나눈다.
+            onelineTable = []
+            twolineTalbe = []
             
+            for type in objTable:
+                if type[2] <= ref :
+                    onelineTable.append(list(type))
+                else:
+                    twolineTalbe.append(list(type))
+            onelineTable = np.array(onelineTable)
+            twolineTalbe = np.array(twolineTalbe)
+            if onelineTable.size :
+                onelineTable = onelineTable[onelineTable[:,-1].argsort()] #onelineTable[:,3].argsort() 순서대로 인덱스를 반환
+            if twolineTalbe.size :
+                twolineTalbe = twolineTalbe[twolineTalbe[:,-1].argsort()]
+            if onelineTable.size and twolineTalbe.size:
+                plateTable = np.append(onelineTable,twolineTalbe, axis=0)
+            elif onelineTable.size:
+                plateTable =  onelineTable
+            elif twolineTalbe.size:
+                plateTable =  twolineTalbe
+
+        else:
+                onelineTable = objTable
+                plateTable = onelineTable[onelineTable[:,-1].argsort()]
+        """        
+        #숫자가 있을 때 다른 문자 안에 포함되면 삭제한다.
+        boxes = plateTable[:,2:]
+        boxes[:,[0,1]] = boxes[:,[1,0]] 
+        boxes[:,[2,3]] = boxes[:,[3,2]] 
+        
+        #print("plateTable : {0}".format(plateTable))
+        
+        isbreak = False
+        for i in range(0,len(boxes) - 1):
+            box1 = boxes[i]
+            for box2 in boxes[i+1 :]:
+                iou,box1_area, box2_area,inter = IoU(box1,box2)
+                if iou > 0.05 and box1_area < box2_area :
+                    plateTable = np.delete(plateTable, i, axis=0)
+                    print("box {0} 삭제 ".format(i))
+                    isbreak = True
             
+            if isbreak :
+                break;
+        """        
+        #print("plateTable : {0}".format(plateTable))
+      
+        for i in range(0,num_detections) :
+            class_index = int(plateTable[i][0])
+            if class_index <= 10 :
+                name = category_index[class_index]['name']
+                plate_str = plate_str + CLASS_DIC[name]
+            else :
+                plate_str = plate_str + category_index[class_index]['name']
+    
+    print("SSD 인식 내용 {0}".format(plate_str))
+    return plate_str            
             
+def imread(filename, flags=cv2.IMREAD_COLOR, dtype=np.uint8):
+    try:
+        n = np.fromfile(filename, dtype)
+        img = cv2.imdecode(n, flags)
+        return img
+    except Exception as e:
+        print(e)
+        return None
+    
+def imwrite(filename, img, params=None):
+    try:
+        ext = os.path.splitext(filename)[1]
+        result, n = cv2.imencode(ext, img, params)
+
+        if result:
+            with open(filename, mode='w+b') as f:
+                n.tofile(f)
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(e)
+        return False              
 

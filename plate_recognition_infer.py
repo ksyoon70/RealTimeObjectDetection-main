@@ -24,6 +24,9 @@ import time
 from plate_number_infer import *
 from plate_recog_common import *
 from plate_char_infer import *
+from plate_hr_infer import *
+from plate_vr_infer import *
+from plate_or_infer import *
 
 
 #========================
@@ -32,7 +35,7 @@ dataset_category='plate'
 test_dir_name = 'test'
 show_image = True
 save_image = True
-THRESH_HOLD = 0.8
+THRESH_HOLD = 0.1
 #========================
 
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
@@ -66,11 +69,30 @@ ndet_model, ncat_index = number_det_init_fn()      # ncat_index 글자 추출 �
 
 #문자 모델 초기화
 char_model =  char_det_init_fn()
+
+#hr 문자모델 초기화
+hr_model = hr_det_init_fn()
+
+#vr 문자모델 초기화
+vr_model = vr_det_init_fn()
+
+#or 문자모델 초기화
+or_model = or_det_init_fn()
+
     
-fileNum = len(os.listdir(images_dir))
+total_test_files = len(os.listdir(images_dir))
 cnt = 0;
 
-models = [ndet_model, char_model]
+models = [ndet_model, char_model, hr_model, vr_model, or_model]
+
+
+print('테스트용 이미지 갯수:',total_test_files)
+
+recog_count = 0
+fail_count = 0
+false_recog_count = 0  #오인식 카운트
+true_recog_count = 0
+start_time = time.time() # strat time
 
 for filename in os.listdir(images_dir):
     cnt += 1
@@ -97,8 +119,8 @@ for filename in os.listdir(images_dir):
 
         if detections['detection_scores'][0] > THRESH_HOLD :
             class_index = detections['detection_classes'][0]+label_id_offset
-            print("'클래스:{0} 번호판 타입 {1} 확률:{2:.3f}".format(class_index,category_index[class_index]['name'],detections['detection_scores'][0]))
-            print('box= {}'.format(detections['detection_boxes'][0]))
+            #print("'클래스:{0} 번호판 타입 {1} 확률:{2:.3f}".format(class_index,category_index[class_index]['name'],detections['detection_scores'][0]))
+            #print('box= {}'.format(detections['detection_boxes'][0]))
             box = list(range(0,4))
             box = detections['detection_boxes'][0]
             height, width, ch = image_np.shape
@@ -117,46 +139,44 @@ for filename in os.listdir(images_dir):
             ratio = float(desired_size)/max(old_size)
             new_size = tuple([int(x*ratio) for x in old_size])
             #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
-            cropped_img = cv2.resize(plate_img,new_size,interpolation=cv2.INTER_LINEAR)
+            cropped_img = cv2.resize(plate_img,new_size,interpolation=cv2.INTER_AREA)
             plate_new_img_np = np.zeros((desired_size, desired_size, 3), dtype = "uint8")
-            plate_new_img = cv2.cvtColor(plate_new_img_np, cv2.COLOR_BGR2RGB)
             h = new_size[1]
             w = new_size[0]
             yoff = round((desired_size-h)/2)
             xoff = round((desired_size-w)/2)
             #320x320영상에 번호판을 붙여 넣는다.
-            plate_new_img[yoff:yoff+h, xoff:xoff+w , :] = cropped_img
-            # plt.imshow(plate_new_img)
-            # plt.show()
+            plate_new_img_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img            
             #번호판에 대하여 문자 및 번호를 인식한다.
-            plate_number_detect_fn(models,plate_new_img,ncat_index)
+            plate_str = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index)
+            
+            basefilename, ext = os.path.splitext(filename)
+            result_file = os.path.join(result_dir, basefilename + '_' + plate_str + ext)
+            plate_new_img_np = cv2.cvtColor(plate_new_img_np, cv2.COLOR_RGB2BGR)
+            imwrite( result_file, plate_new_img_np)
+            
+            gtrue_label = filename.split('_')[1]
+            gtrue_label = gtrue_label[0:-4]
+            
+            xfind = plate_str.find('x')
+            
+            if xfind == -1 :
+                recog_count += 1
+                if(gtrue_label == plate_str) :
+                        true_recog_count += 1
+                else:
+                    false_recog_count += 1
+                    
+            else :
+                fail_count += 1
                 
-            
-            
-            
-            #numpy에서 번호판 영상을 오려낸다.
-            
-        
-        
-        # viz_utils.visualize_boxes_and_labels_on_image_array(
-        #             image_np_with_detections,
-        #             detections['detection_boxes'],
-        #             detections['detection_classes']+label_id_offset,
-        #             detections['detection_scores'],
-        #             category_index,
-        #             use_normalized_coordinates=True,
-        #             max_boxes_to_draw=20,
-        #             min_score_thresh=.10,
-        #             agnostic_mode=False)
-        
-        
-        # save_fig_path = os.path.join(result_dir,filename)
-        
-        # resultImage = cv2.cvtColor(image_np_with_detections, cv2.COLOR_BGR2RGB)
-        
-        # if save_image :
-        #     if not (save_fig_path is None):
-        #         plt.imsave(save_fig_path, resultImage)
+end_time = time.time()        
+print("수행시간: {:.2f}".format(end_time - start_time))
+print("건당 수행시간 : {:.2f}".format((end_time - start_time)/total_test_files))             
+print('인식률: {:}'.format(recog_count) +'  ({:.2f})'.format(recog_count*100/total_test_files) + ' %')
+print('정인식: {:}'.format(true_recog_count) +'  ({:.2f})'.format(true_recog_count*100/recog_count) + ' %')
+print('오인식: {:}'.format(false_recog_count) +'  ({:.2f})'.format(false_recog_count*100/recog_count) + ' %')
+print('인식실패: {}'.format(fail_count) +'  ({:.2f})'.format(fail_count*100/total_test_files) + ' %')              
 
         
         

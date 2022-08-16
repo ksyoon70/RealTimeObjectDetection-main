@@ -22,19 +22,19 @@ from plate_recog_common import *
 
 #----------------------------
 DEFAULT_LABEL_FILE = "./LPR_Labels1.txt"  #라벨 파일이름
-CHAR_MODEL_DIR = 'char_model'
-MODEL_FILE_NAME ='character_resnet50_model_epoch_46_val_acc_0.7367_20220816-145908.h5'
-CMODEL_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,MODEL_FILE_NAME)
-WEIGHT_FILE_NAME = 'character_resnet50_20220816-145239_model_weights_epoch_26_val_acc_0.740.h5'
-CWEIGHT_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,WEIGHT_FILE_NAME)
-CATEGORIES_FILE_NAME = 'character_categories.txt'
-CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,CATEGORIES_FILE_NAME)
+HR_MODEL_DIR = 'hreg_model'
+MODEL_FILE_NAME ='hregion_resnet50_model_epoch_22_val_acc_0.6875_20220816-151019.h5'
+HR_MODEL_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,MODEL_FILE_NAME)
+WEIGHT_FILE_NAME = 'hregion_resnet50_20220816-150942_model_weights_epoch_12_val_acc_0.762.h5'
+HR_WEIGHT_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,WEIGHT_FILE_NAME)
+CATEGORIES_FILE_NAME = 'hregion_categories.txt'
+CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
-CH_THRESH_HOLD = 0.5
+HR_THRESH_HOLD = 0.5
 #----------------------------
 
 #read model
-def char_det_init_fn():
+def hr_det_init_fn():
     
     fLabels = pd.read_csv(DEFAULT_LABEL_FILE, header = None )
     LABEL_FILE_CLASS = fLabels[0].values.tolist()
@@ -42,9 +42,9 @@ def char_det_init_fn():
     global CLASS_DIC
     CLASS_DIC = dict(zip(LABEL_FILE_CLASS, LABEL_FILE_HUMAN_NAMES))
     
-    model = load_model(CMODEL_PATH)
+    model = load_model(HR_MODEL_PATH)
     #read weight value from trained dir
-    model.load_weights(CWEIGHT_PATH)
+    model.load_weights(HR_WEIGHT_PATH)
     global categories
     catLabels = pd.read_csv(CATEGORIES_FILE_PATH, header = None )
     categories = catLabels[0].values.tolist()
@@ -53,16 +53,17 @@ def char_det_init_fn():
     return model
 
 
-def char_det_fn(model, img_np) :
+def hr_det_fn(model, img_np) :
     img_np = np.expand_dims(img_np,axis=0)
     preds = model.predict(img_np)
     index = np.argmax(preds[0],0)
     predic_label = None
-    if preds[0][index] > CH_THRESH_HOLD :
+    if preds[0][index] > HR_THRESH_HOLD :
         predic_label = CLASS_DIC[categories[index]]
         print('predict:{}'.format(predic_label))
     else:
         predic_label = 'x'
+        print('미인식:{}'.format(predic_label))
         
     print('확률:{}%'.format(preds[0][index]*100 ))
     return  predic_label

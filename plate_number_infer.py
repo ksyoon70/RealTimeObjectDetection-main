@@ -21,6 +21,7 @@ from object_detection.utils import visualization_utils as viz_utils
 from object_detection.builders import model_builder
 from object_detection.utils import config_util
 import numpy as np
+import copy
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -30,7 +31,10 @@ import matplotlib.image as Image
 import time
 from plate_recog_common import *
 from plate_char_infer import *
-from label_tools import predictPlateNumber
+from plate_hr_infer import *
+from plate_vr_infer import *
+from plate_or_infer import *
+from label_tools import predictPlateNumber, predictPlateNumberODAPI
 
 
 #========================
@@ -55,11 +59,11 @@ def number_det_init_fn():
     number_det_model = model_builder.build(model_config=configs['model'], is_training=False)
     # Restore checkpoint
     ckpt = tf.compat.v2.train.Checkpoint(model=number_det_model)
-    #ckpt.restore(os.path.join(CHECKPOINT_PATH, 'ckpt-101')).expect_partial()
+    #ckpt.restore(os.path.join(CHECKPOINT_PAdTH, 'ckpt-101')).expect_partial()
     #restore latest checkpoint
     ckpt.restore(tf.train.latest_checkpoint(PCHECKPOINT_PATH))
     global ANNOTATION_PATH
-    category_index = label_map_util.create_category_index_from_labelmap(os.path.join(ANNOTATION_PATH, 'charlabel_map.pbtxt'))
+    category_index = label_map_util.create_category_index_from_labelmap(os.path.join(ANNOTATION_PATH, 'char_number_label_map.pbtxt'))
 
     fLabels = pd.read_csv(DEFAULT_LABEL_FILE, header = None )
     global LABEL_FILE_CLASS
@@ -79,11 +83,15 @@ def number_det_fn(image, detection_model):
 
 
 
-def plate_number_detect_fn(models, imageRGB, category_index) :
+def plate_number_detect_fn(models, imageRGB, category_index,platetype_index) :
 
     image_np = imageRGB
     ndet_model = models[0]
     cdet_model = models[1]
+    hr_det_model = models[2]
+    vr_det_model = models[3]
+    or_det_model = models[4]
+    
     pinput_tensor = tf.convert_to_tensor(np.expand_dims(image_np, 0), dtype=tf.float32)
     detections = number_det_fn(pinput_tensor,ndet_model)
     
@@ -98,7 +106,7 @@ def plate_number_detect_fn(models, imageRGB, category_index) :
     label_id_offset = 1
     image_np_with_detections = image_np.copy()
     
-    
+    """
     viz_utils.visualize_boxes_and_labels_on_image_array(
                 image_np_with_detections,
                 detections['detection_boxes'],
@@ -109,29 +117,43 @@ def plate_number_detect_fn(models, imageRGB, category_index) :
                 max_boxes_to_draw=20,
                 min_score_thresh=.10,
                 agnostic_mode=False)
+    """
     #검지 class가 'char' 이면 문자 검출을 한다.
     # 객체 인식율을 정수로 변환
-    scores = detections['detection_scores'][0:num_detections]
-    class_ids = detections['detection_classes']+label_id_offset
-    intscore = list(map(int, [x*y for x,y in zip(scores, [100] * len(scores))]))
-    # class_ids[] + intscore[]
-    objplates = np.column_stack((class_ids, intscore))
-    plate_str =  predictPlateNumber(np.array(CnNtables),CLASS_DIC,LABEL_FILE_CLASS)
+    # scores = detections['detection_scores'][0:num_detections]
+    # class_ids = detections['detection_classes']+label_id_offset
+    # intscore = list(map(int, [x*y for x,y in zip(scores, [100] * len(scores))]))
     
+    #Char, vReg, hReg, oReg, 
     ch = None
+    category_index_temp = copy.deepcopy(category_index)
     for index, cindex in enumerate(detections['detection_classes']+label_id_offset) :
         if category_index[cindex]['name'] == 'Char' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
             ch = char_det_fn(cdet_model,det_image_np)
+            category_index_temp[cindex]['name'] = ch
+        if category_index[cindex]['name'] == 'hReg' :
+            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
+            ch = hr_det_fn(hr_det_model,det_image_np)
+            category_index_temp[cindex]['name'] = ch
+        if category_index[cindex]['name'] == 'vReg' :
+            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
+            ch = vr_det_fn(vr_det_model,det_image_np)
+            category_index_temp[cindex]['name'] = ch
+        if category_index[cindex]['name'] == 'oReg' :
+            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
+            ch = or_det_fn(or_det_model,det_image_np)
+            category_index_temp[cindex]['name'] = ch
     
-    
+    plate_str =  predictPlateNumberODAPI(detections,platetype_index,category_index_temp, CLASS_DIC)
+  
   
     
-    resultImage = cv2.cvtColor(image_np_with_detections, cv2.COLOR_BGR2RGB)
-    
     if show_image :
-        plt.imshow(resultImage)
+        plt.imshow(image_np_with_detections)
         plt.show()
+        
+    return plate_str
             
 
 

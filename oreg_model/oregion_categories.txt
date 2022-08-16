@@ -1,0 +1,12 @@
+OpBuSan
+OpChungBuk
+OpChungNam
+OpDaeGu
+OpGangwon
+OpGyeongBuk
+OpGyeongGi
+OpGyeongNam
+OpIncheon
+OpJeonNam
+OpSeoul
+OpUlSan

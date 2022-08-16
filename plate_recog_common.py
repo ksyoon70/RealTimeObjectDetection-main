@@ -71,9 +71,8 @@ def extract_sub_image(src_np, box, width, height, fixratio=False):
     box_sx= int(src_width*box[1])
     box_ey = int(src_height*box[2])
     box_ex= int(src_width*box[3])
-    obj_np = src_np[box_sy:box_ey,box_sx:box_ex,:]
+    obj_img = src_np[box_sy:box_ey,box_sx:box_ex,:]
     
-    obj_img = cv2.cvtColor(obj_np, cv2.COLOR_BGR2RGB)                
     #번호판을 320x320 크기로 정규화 한다.
     if fixratio :
         desired_size = max(height,width)
@@ -83,7 +82,7 @@ def extract_sub_image(src_np, box, width, height, fixratio=False):
         #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
         cropped_img = cv2.resize(obj_img,new_size,interpolation=cv2.INTER_LINEAR)
         dst_np = np.zeros((desired_size, desired_size, 3), dtype = "uint8")
-        dst_np = cv2.cvtColor(dst_np, cv2.COLOR_BGR2RGB)
+        #dst_np = cv2.cvtColor(dst_np, cv2.COLOR_BGR2RGB)
         h = new_size[1]
         w = new_size[0]
         yoff = round((desired_size-h)/2)
