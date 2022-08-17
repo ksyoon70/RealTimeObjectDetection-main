@@ -49,9 +49,14 @@ CHECKPOINT_PATH = os.path.join( MODEL_PATH , 'my_ssd_mobnet')
 #테스트할 이미지 디렉토리
 images_dir = os.path.join(IMAGE_PATH,test_dir_name)
 result_dir = os.path.join(IMAGE_PATH,'result')
+no_recog_dir = os.path.join(result_dir,'no_recog')
 
 if not os.path.isdir(result_dir):
 	os.mkdir(result_dir)
+    
+#미인식 이면 미인식 폴더에 넣는다.
+if not os.path.isdir(no_recog_dir):
+	os.mkdir(no_recog_dir)
 
 # Load pipeline config and build a detection model
 configs = config_util.get_configs_from_pipeline_file(CONFIG_PATH)
@@ -94,6 +99,9 @@ false_recog_count = 0  #오인식 카운트
 true_recog_count = 0
 start_time = time.time() # strat time
 
+RESIZE_IMAGE_WIDTH = 320
+RESIZE_IMAGE_HEIGHT = 320
+
 for filename in os.listdir(images_dir):
     cnt += 1
     image_path = os.path.join(images_dir,filename)
@@ -101,7 +109,16 @@ for filename in os.listdir(images_dir):
         imgRGB  = imread(image_path)
         #imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image_np = np.array(imgRGB)
-        input_tensor = tf.convert_to_tensor(np.expand_dims(image_np, 0), dtype=tf.float32)
+        
+        src_height, src_width, scr_ch = image_np.shape
+        
+        
+        
+        src_box = [0,0,1,1]
+        det_image_np = extract_sub_image(image_np,src_box,RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_WIDTH,fixratio=True)
+        #plt.imshow(det_image_np)
+        #plt.show()
+        input_tensor = tf.convert_to_tensor(np.expand_dims(det_image_np, 0), dtype=tf.float32)
         detections = detect_fn(input_tensor, detection_model)
         
         num_detections = int(detections.pop('num_detections'))
@@ -124,16 +141,36 @@ for filename in os.listdir(images_dir):
             box = list(range(0,4))
             box = detections['detection_boxes'][0]
             height, width, ch = image_np.shape
-            box_sy = int(height*box[0])
-            box_sx= int(width*box[1])
-            box_ey = int(height*box[2])
-            box_ex= int(width*box[3])
+            # box_sy = int(height*box[0])
+            # box_sx= int(width*box[1])
+            # box_ey = int(height*box[2])
+            # box_ex= int(width*box[3])
+            
+            if src_width >= src_height :
+                # x 좌표는 그대로 쓴다.
+                box_sx= int(width*box[1])
+                box_ex= int(width*box[3])
+                # y 좌표는 수정한다.
+                # 상위 black 부분 
+                up_black = (src_width - src_height)/2.0
+                box_sy = int(box[0]*src_width - up_black)
+                box_ey = int(box[2]*src_width - up_black)
+            else :
+                # y 좌표는 그대로 쓴다.
+                box_sy= int(width*box[0])
+                box_ey= int(width*box[2])
+                # y 좌표는 수정한다.
+                # 좌측 black 부분 
+                left_black = (src_height - src_width)/2.0
+                box_sx = int(box[1]*src_height - left_black)
+                box_ex = int(box[3]*src_height - left_black)
+            
             plate_np = image_np[box_sy:box_ey,box_sx:box_ex,:]
+            #plt.imshow(plate_np)
+            #plt.show()
             
             plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB)                
             #번호판을 320x320 크기로 정규화 한다.
-            RESIZE_IMAGE_WIDTH = 320
-            RESIZE_IMAGE_HEIGHT = 320
             desired_size = max(RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_HEIGHT)
             old_size = [plate_img.shape[1],plate_img.shape[0]]
             ratio = float(desired_size)/max(old_size)
@@ -151,14 +188,22 @@ for filename in os.listdir(images_dir):
             plate_str = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index)
             
             basefilename, ext = os.path.splitext(filename)
-            result_file = os.path.join(result_dir, basefilename + '_' + plate_str + ext)
+            
             plate_new_img_np = cv2.cvtColor(plate_new_img_np, cv2.COLOR_RGB2BGR)
-            imwrite( result_file, plate_new_img_np)
+           
             
             gtrue_label = filename.split('_')[1]
             gtrue_label = gtrue_label[0:-4]
             
             xfind = plate_str.find('x')
+            
+            yfind = gtrue_label.find('영')
+            
+            #영자를 삭제한다.
+            if yfind >= 0 :
+                gtrue_label = gtrue_label.replace('영','')
+            
+            
             
             if xfind == -1 :
                 recog_count += 1
@@ -166,9 +211,16 @@ for filename in os.listdir(images_dir):
                         true_recog_count += 1
                 else:
                     false_recog_count += 1
-                    
+                result_file = os.path.join(result_dir, basefilename + '_' + plate_str + ext)    
             else :
                 fail_count += 1
+                result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)
+        else :
+            fail_count += 1
+            result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)
+        
+        imwrite( result_file, plate_new_img_np)
+            
                 
 end_time = time.time()        
 print("수행시간: {:.2f}".format(end_time - start_time))
