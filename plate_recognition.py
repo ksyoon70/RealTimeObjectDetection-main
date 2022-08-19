@@ -50,6 +50,7 @@ CHECKPOINT_PATH = os.path.join( MODEL_PATH , 'my_ssd_mobnet')
 images_dir = os.path.join(IMAGE_PATH,test_dir_name)
 result_dir = os.path.join(IMAGE_PATH,'result')
 no_recog_dir = os.path.join(result_dir,'no_recog')
+wrong_recog_dir = os.path.join(result_dir,'wrong_recog') #오인식
 
 if not os.path.isdir(result_dir):
 	os.mkdir(result_dir)
@@ -57,6 +58,10 @@ if not os.path.isdir(result_dir):
 #미인식 이면 미인식 폴더에 넣는다.
 if not os.path.isdir(no_recog_dir):
 	os.mkdir(no_recog_dir)
+    
+#오인식 이면 오인식 폴더에 넣는다.
+if not os.path.isdir(wrong_recog_dir):
+	os.mkdir(wrong_recog_dir)
 
 # Load pipeline config and build a detection model
 configs = config_util.get_configs_from_pipeline_file(CONFIG_PATH)
@@ -208,10 +213,12 @@ for filename in os.listdir(images_dir):
             if xfind == -1 :
                 recog_count += 1
                 if(gtrue_label == plate_str) :
-                        true_recog_count += 1
+                    true_recog_count += 1
+                    result_file = os.path.join(result_dir, basefilename + '_' + plate_str + ext)
                 else:
                     false_recog_count += 1
-                result_file = os.path.join(result_dir, basefilename + '_' + plate_str + ext)    
+                    result_file = os.path.join(wrong_recog_dir, basefilename + '_' + plate_str + ext)
+                    
             else :
                 fail_count += 1
                 result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)

@@ -23,14 +23,14 @@ from plate_recog_common import *
 #----------------------------
 DEFAULT_LABEL_FILE = "./LPR_Labels1.txt"  #라벨 파일이름
 CHAR_MODEL_DIR = 'char_model'
-MODEL_FILE_NAME ='character_resnet50_model_epoch_46_val_acc_0.7367_20220816-145908.h5'
+MODEL_FILE_NAME ='character_resnet50_model_epoch_42_val_acc_0.8555_20220819-102114.h5'
 CMODEL_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,MODEL_FILE_NAME)
-WEIGHT_FILE_NAME = 'character_resnet50_20220816-145239_model_weights_epoch_26_val_acc_0.740.h5'
+WEIGHT_FILE_NAME = 'character_resnet50_20220819-101337_model_weights_epoch_32_val_acc_0.877.h5'
 CWEIGHT_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,WEIGHT_FILE_NAME)
 CATEGORIES_FILE_NAME = 'character_categories.txt'
 CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
-CH_THRESH_HOLD = 0.5
+CH_THRESH_HOLD = 0.8
 #----------------------------
 
 #read model

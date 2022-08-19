@@ -23,9 +23,9 @@ from plate_recog_common import *
 #----------------------------
 DEFAULT_LABEL_FILE = "./LPR_Labels1.txt"  #라벨 파일이름
 VR_MODEL_DIR = 'vreg_model'
-MODEL_FILE_NAME ='vregion_resnet50_model_epoch_30_val_acc_0.9286_20220816-151209.h5'
+MODEL_FILE_NAME ='vregion_resnet50_model_epoch_37_val_acc_0.8906_20220819-102828.h5'
 VR_MODEL_PATH = os.path.join(ROOT_DIR,VR_MODEL_DIR,MODEL_FILE_NAME)
-WEIGHT_FILE_NAME = 'vregion_resnet50_20220816-151121_model_weights_epoch_20_val_acc_0.957.h5'
+WEIGHT_FILE_NAME = 'vregion_resnet50_20220819-102738_model_weights_epoch_27_val_acc_0.891.h5'
 VR_WEIGHT_PATH = os.path.join(ROOT_DIR,VR_MODEL_DIR,WEIGHT_FILE_NAME)
 CATEGORIES_FILE_NAME = 'vregion_categories.txt'
 CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,VR_MODEL_DIR,CATEGORIES_FILE_NAME)

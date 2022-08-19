@@ -23,14 +23,14 @@ from plate_recog_common import *
 #----------------------------
 DEFAULT_LABEL_FILE = "./LPR_Labels1.txt"  #라벨 파일이름
 HR_MODEL_DIR = 'hreg_model'
-MODEL_FILE_NAME ='hregion_resnet50_model_epoch_22_val_acc_0.6875_20220816-151019.h5'
+MODEL_FILE_NAME ='hregion_resnet50_model_epoch_40_val_acc_0.7578_20220819-102703.h5'
 HR_MODEL_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,MODEL_FILE_NAME)
-WEIGHT_FILE_NAME = 'hregion_resnet50_20220816-150942_model_weights_epoch_12_val_acc_0.762.h5'
+WEIGHT_FILE_NAME = 'hregion_resnet50_20220819-102532_model_weights_epoch_30_val_acc_0.867.h5'
 HR_WEIGHT_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,WEIGHT_FILE_NAME)
 CATEGORIES_FILE_NAME = 'hregion_categories.txt'
 CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
-HR_THRESH_HOLD = 0.5
+HR_THRESH_HOLD = 0.8
 #----------------------------
 
 #read model

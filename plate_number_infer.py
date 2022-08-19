@@ -106,7 +106,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index) :
     label_id_offset = 1
     image_np_with_detections = image_np.copy()
     
-    """
+    
     viz_utils.visualize_boxes_and_labels_on_image_array(
                 image_np_with_detections,
                 detections['detection_boxes'],
@@ -117,7 +117,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index) :
                 max_boxes_to_draw=20,
                 min_score_thresh=.10,
                 agnostic_mode=False)
-    """
+    
     #검지 class가 'char' 이면 문자 검출을 한다.
     # 객체 인식율을 정수로 변환
     # scores = detections['detection_scores'][0:num_detections]
