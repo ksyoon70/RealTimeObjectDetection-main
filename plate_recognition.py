@@ -14,6 +14,7 @@ from object_detection.utils import visualization_utils as viz_utils
 from object_detection.builders import model_builder
 from object_detection.utils import config_util
 import numpy as np
+import shutil
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -36,6 +37,7 @@ test_dir_name = 'test'
 show_image = True
 save_image = True
 THRESH_HOLD = 0.1
+IS_RESULT_DIR_REMOVE = True #결과 디렉토리 삭제 여부
 #========================
 
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
@@ -51,6 +53,10 @@ images_dir = os.path.join(IMAGE_PATH,test_dir_name)
 result_dir = os.path.join(IMAGE_PATH,'result')
 no_recog_dir = os.path.join(result_dir,'no_recog')
 wrong_recog_dir = os.path.join(result_dir,'wrong_recog') #오인식
+
+#result 디렉토리 삭제여부
+if IS_RESULT_DIR_REMOVE :
+    shutil.rmtree(result_dir)
 
 if not os.path.isdir(result_dir):
 	os.mkdir(result_dir)
@@ -216,12 +222,15 @@ for filename in os.listdir(images_dir):
                     true_recog_count += 1
                     result_file = os.path.join(result_dir, basefilename + '_' + plate_str + ext)
                 else:
+                    #오인식인 경우
                     false_recog_count += 1
                     result_file = os.path.join(wrong_recog_dir, basefilename + '_' + plate_str + ext)
+                    shutil.copy(image_path, os.path.join(wrong_recog_dir,os.path.basename(image_path)))
                     
             else :
                 fail_count += 1
                 result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)
+                
         else :
             fail_count += 1
             result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)

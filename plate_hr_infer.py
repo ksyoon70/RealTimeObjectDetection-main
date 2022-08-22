@@ -23,10 +23,10 @@ from plate_recog_common import *
 #----------------------------
 DEFAULT_LABEL_FILE = "./LPR_Labels1.txt"  #라벨 파일이름
 HR_MODEL_DIR = 'hreg_model'
-MODEL_FILE_NAME ='hregion_resnet50_model_epoch_40_val_acc_0.7578_20220819-102703.h5'
-HR_MODEL_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,MODEL_FILE_NAME)
-WEIGHT_FILE_NAME = 'hregion_resnet50_20220819-102532_model_weights_epoch_30_val_acc_0.867.h5'
-HR_WEIGHT_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,WEIGHT_FILE_NAME)
+MODEL_FILE_NAME = None #'hregion_resnet50_model_epoch_40_val_acc_0.7578_20220819-102703.h5'
+HR_MODEL_PATH = None #os.path.join(ROOT_DIR,HR_MODEL_DIR,MODEL_FILE_NAME)
+WEIGHT_FILE_NAME = None #'hregion_resnet50_20220819-102532_model_weights_epoch_30_val_acc_0.867.h5'
+HR_WEIGHT_PATH = None #os.path.join(ROOT_DIR,HR_MODEL_DIR,WEIGHT_FILE_NAME)
 CATEGORIES_FILE_NAME = 'hregion_categories.txt'
 CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
@@ -42,8 +42,17 @@ def hr_det_init_fn():
     global CLASS_DIC
     CLASS_DIC = dict(zip(LABEL_FILE_CLASS, LABEL_FILE_HUMAN_NAMES))
     
+    filelist =  os.listdir(os.path.join(ROOT_DIR,HR_MODEL_DIR))
+
+    for fn in filelist :
+        if 'model' in fn :
+            HR_MODEL_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,fn)
+
+        if 'weight' in fn:
+            #read weight value from trained dir
+            HR_WEIGHT_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,fn)
+            
     model = load_model(HR_MODEL_PATH)
-    #read weight value from trained dir
     model.load_weights(HR_WEIGHT_PATH)
     global categories
     catLabels = pd.read_csv(CATEGORIES_FILE_PATH, header = None )

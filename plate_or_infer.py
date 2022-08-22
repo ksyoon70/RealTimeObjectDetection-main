@@ -22,13 +22,13 @@ from plate_recog_common import *
 
 #----------------------------
 DEFAULT_LABEL_FILE = "./LPR_Labels1.txt"  #라벨 파일이름
-HR_MODEL_DIR = 'oreg_model'
-MODEL_FILE_NAME ='oregion_resnet50_model_epoch_57_val_acc_0.8750_20220819-102937.h5'
-OR_MODEL_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,MODEL_FILE_NAME)
-WEIGHT_FILE_NAME = 'oregion_resnet50_20220819-102845_model_weights_epoch_47_val_acc_0.938.h5'
-OR_WEIGHT_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,WEIGHT_FILE_NAME)
+OR_MODEL_DIR = 'oreg_model'
+MODEL_FILE_NAME = None #'oregion_resnet50_model_epoch_57_val_acc_0.8750_20220819-102937.h5'
+OR_MODEL_PATH = None #os.path.join(ROOT_DIR,HR_MODEL_DIR,MODEL_FILE_NAME)
+WEIGHT_FILE_NAME = None #'oregion_resnet50_20220819-102845_model_weights_epoch_47_val_acc_0.938.h5'
+OR_WEIGHT_PATH = None #os.path.join(ROOT_DIR,HR_MODEL_DIR,WEIGHT_FILE_NAME)
 CATEGORIES_FILE_NAME = 'oregion_categories.txt'
-CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,CATEGORIES_FILE_NAME)
+CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,OR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
 OR_THRESH_HOLD = 0.8
 #----------------------------
@@ -42,9 +42,18 @@ def or_det_init_fn():
     global CLASS_DIC
     CLASS_DIC = dict(zip(LABEL_FILE_CLASS, LABEL_FILE_HUMAN_NAMES))
     
+    filelist =  os.listdir(os.path.join(ROOT_DIR,OR_MODEL_DIR))
+    for fn in filelist :
+        if 'model' in fn :
+            OR_MODEL_PATH = os.path.join(ROOT_DIR,OR_MODEL_DIR,fn)
+            
+        if 'weight' in fn:
+            #read weight value from trained dir
+            OR_WEIGHT_PATH = os.path.join(ROOT_DIR,OR_MODEL_DIR,fn)
+            
     model = load_model(OR_MODEL_PATH)
-    #read weight value from trained dir
     model.load_weights(OR_WEIGHT_PATH)
+    
     global categories
     catLabels = pd.read_csv(CATEGORIES_FILE_PATH, header = None )
     categories = catLabels[0].values.tolist()

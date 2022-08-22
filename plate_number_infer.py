@@ -126,6 +126,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index) :
     
     #Char, vReg, hReg, oReg, 
     ch = None
+    twoLinePlate = False
     category_index_temp = copy.deepcopy(category_index)
     for index, cindex in enumerate(detections['detection_classes']+label_id_offset) :
         if category_index[cindex]['name'] == 'Char' :
@@ -136,6 +137,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index) :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
             ch = hr_det_fn(hr_det_model,det_image_np)
             category_index_temp[cindex]['name'] = ch
+            twoLinePlate = True
         if category_index[cindex]['name'] == 'vReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
             ch = vr_det_fn(vr_det_model,det_image_np)
@@ -144,8 +146,9 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index) :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
             ch = or_det_fn(or_det_model,det_image_np)
             category_index_temp[cindex]['name'] = ch
+            twoLinePlate = True
     
-    plate_str =  predictPlateNumberODAPI(detections,platetype_index,category_index_temp, CLASS_DIC)
+    plate_str =  predictPlateNumberODAPI(detections,platetype_index,category_index_temp, CLASS_DIC, twoLinePlate=twoLinePlate)
   
   
     

@@ -23,10 +23,10 @@ from plate_recog_common import *
 #----------------------------
 DEFAULT_LABEL_FILE = "./LPR_Labels1.txt"  #라벨 파일이름
 CHAR_MODEL_DIR = 'char_model'
-MODEL_FILE_NAME ='character_resnet50_model_epoch_42_val_acc_0.8555_20220819-102114.h5'
-CMODEL_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,MODEL_FILE_NAME)
-WEIGHT_FILE_NAME = 'character_resnet50_20220819-101337_model_weights_epoch_32_val_acc_0.877.h5'
-CWEIGHT_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,WEIGHT_FILE_NAME)
+MODEL_FILE_NAME = None #'character_resnet50_20220820-002035_model_epoch_35_val_acc_0.9025.h5'
+CMODEL_PATH = None
+WEIGHT_FILE_NAME = None #'character_resnet50_20220820-001359_weights_epoch_025_val_acc_0.905.h5'
+CWEIGHT_PATH = None
 CATEGORIES_FILE_NAME = 'character_categories.txt'
 CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
@@ -42,9 +42,19 @@ def char_det_init_fn():
     global CLASS_DIC
     CLASS_DIC = dict(zip(LABEL_FILE_CLASS, LABEL_FILE_HUMAN_NAMES))
     
+    filelist =  os.listdir(os.path.join(ROOT_DIR,CHAR_MODEL_DIR))
+
+    for fn in filelist :
+        if 'model' in fn :
+            CMODEL_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,fn)
+           
+        if 'weight' in fn:
+            #read weight value from trained dir
+            CWEIGHT_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,fn)
+
     model = load_model(CMODEL_PATH)
-    #read weight value from trained dir
     model.load_weights(CWEIGHT_PATH)
+    
     global categories
     catLabels = pd.read_csv(CATEGORIES_FILE_PATH, header = None )
     categories = catLabels[0].values.tolist()

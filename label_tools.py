@@ -326,7 +326,7 @@ def createFolder(directory):
     
             
 #Object Detection API에서의  번호/문자 인식 내용을 추출 한다.    
-def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC) :
+def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, twoLinePlate) :
     
     objTable = []
     
@@ -347,7 +347,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC) 
         # 번호판 상하단 구분 위한 코드
         ref = objTable[:,2].mean(axis = 0)
         type = platetype_index
-        if type in twolinePlate :
+        if type in twolinePlate or twoLinePlate :
             plate2line = True
             print("2line")
         else:
@@ -368,6 +368,16 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC) 
             twolineTalbe = np.array(twolineTalbe)
             if onelineTable.size :
                 onelineTable = onelineTable[onelineTable[:,-1].argsort()] #onelineTable[:,3].argsort() 순서대로 인덱스를 반환
+                if onelineTable[0,0] == 13:  # hReg 첫글자 가로 지역문자이면...
+                    res = onelineTable[1:,:]
+                    if res.shape[1] > 2:
+                        res = res[(-res[:,1]).argsort()[:2]] #스코어 순으로 2개만 추린다.
+                        #다시 정렬한다.
+                        res = res[res[:,-1].argsort()]
+                        arr = np.array([onelineTable[0]])
+                        arr = np.concatenate([arr,res],axis=0)
+                        onelineTable = arr
+                        
             if twolineTalbe.size :
                 twolineTalbe = twolineTalbe[twolineTalbe[:,-1].argsort()]
             if onelineTable.size and twolineTalbe.size:
@@ -402,7 +412,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC) 
                 break;
         """        
         #print("plateTable : {0}".format(plateTable))
-      
+        num_detections = plateTable.shape[0] #갯수가 바뀔수 있다.
         for i in range(0,num_detections) :
             class_index = int(plateTable[i][0])
             if class_index <= 10 :
