@@ -323,7 +323,83 @@ def createFolder(directory):
             os.makedirs(directory)
     except OSError:
         print ('Error: Creating directory. ' +  directory)
+        
+#[classid, score, box[0],box[1],box[2],box[3]] 을  objTable 입력으로 받아서
+# 그중에 classid가 한개만 있도록 objTable을 바꾼다. 이때 score가 가장 큰 것만 남긴다.
+def classIdDoubleCheck(class_id,objTable) :
+    #클라스 id가 단 1개만 있어야 하는데 2개 이상이 있으면 score에 따라 삭제 한 후 리턴한다.
+    class_id_np = objTable[:,0] #클래스 id만 있는 numpy 배열을 얻어온다.
+    col_size = objTable.shape[1]
+    result = np.where(class_id_np == class_id)
+    if len(result) and len(result[0]) > 0 : 
+        if  len(result[0]) > 1: # class_id 가 1개 이상이면...   score 별로 정렬 시킨다.
+            class_id_objTable = []
+            for index in result[0]:
+                class_id_objTable.append(objTable[index])
+            #score 별로 정렬을 한다.
+            class_id_objTable = np.array(class_id_objTable)
+            class_id_objTable = class_id_objTable[class_id_objTable[:,1].argsort()]
+            class_id_objTable = class_id_objTable[-1,:] #accendign order 이므로 score가 가장 큰 array만 취득
+            
+            arr = np.array([])
+            for row in objTable :
+                if class_id_objTable[0] != row[0] :
+                    arr = np.concatenate([arr,row],axis=0)
+           
+            arr = np.concatenate([arr,class_id_objTable],axis=0)
+            objTable = arr.reshape(-1,col_size)
+            
+        else: #해당 class_id가 1개 만 있다.
+            return objTable
+    else:
+        return  objTable   
     
+    return objTable    
+
+def checkTwoNumAhead(rindex, objTable) :
+    if rindex <= 1 :
+        return objTable
+    else :
+        numTable = objTable[0:rindex,:]
+        if numTable[0,0] > 10 : #즉 숫자가 아니면.
+            arr_index = [0]
+            arr_index1 = numTable[1:,1].argsort() + 1
+            if arr_index1.size > 2: #즉 숫자가 2개 이상이면...
+                objTable = np.delete(objTable,arr_index1[0].item(),0)
+        else : # score 별로 소팅
+            arr_index1 = numTable[0:,1].argsort()
+            if arr_index1.size > 2: #즉 숫자가 2개 이상이면...
+                objTable = np.delete(objTable,arr_index1[0].item(),0) 
+        return objTable
+# 오직 1개의 region만 존재 하도록 한다.
+def onlyOneRegion(objTable, twoLinePlate) :
+    col_size = objTable.shape[1]
+    
+    regTable = [row  for row in objTable if row[0] > 11 ]
+    
+    if len(regTable) > 0 :
+    
+        regTable = np.array(regTable)
+        
+        #regionTable을 score로 소팅한다.
+        regTable = regTable[(-regTable[:,1]).argsort()]
+        regTable = regTable[0,:]
+        arr = np.array([])
+        if regTable[0] == 12 :
+            twoLinePlate = False
+        elif regTable[0] == 13 or regTable[0] == 14 :
+            twoLinePlate = True
+            
+        for row in objTable :
+            if row[0] < 12 : # region이 아니면..
+                arr = np.concatenate([arr,row],axis=0)
+    
+        arr = np.concatenate([arr,regTable],axis=0)
+        objTable = arr.reshape(-1,col_size)
+        
+
+    
+    return objTable, twoLinePlate
             
 #Object Detection API에서의  번호/문자 인식 내용을 추출 한다.    
 def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, twoLinePlate) :
@@ -340,6 +416,15 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
         objTable.append(item)
     
     objTable = np.array(objTable)
+    
+    #용도 문자가 중복되는지 확인
+    objTable = classIdDoubleCheck(class_id=11,objTable=objTable)
+    #지역 문자가 중복되는지 확인
+    objTable = classIdDoubleCheck(class_id=12,objTable=objTable)
+    objTable = classIdDoubleCheck(class_id=13,objTable=objTable)
+    objTable = classIdDoubleCheck(class_id=14,objTable=objTable)
+    #오직 한개의 region만 존재하도록 한다.
+    objTable, twoLinePlate = onlyOneRegion(objTable,twoLinePlate)
     
     plate_str = "" # 번호판 문자
     if(num_detections > 1):
@@ -393,6 +478,8 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                         arr = twolineTalbe[0 : cindex + 1]
                         arr = np.concatenate([arr,res],axis=0)
                         twolineTalbe = arr
+                    if cindex != 0 and  platetype_index != 9:
+                        twolineTalbe = checkTwoNumAhead(rindex=cindex, objTable=twolineTalbe)
             if onelineTable.size and twolineTalbe.size:
                 plateTable = np.append(onelineTable,twolineTalbe, axis=0)
             elif onelineTable.size:
@@ -416,6 +503,8 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                         arr = plateTable[0 : cindex + 1]
                         arr = np.concatenate([arr,res],axis=0)
                         plateTable = arr
+                    if cindex != 0 and  platetype_index != 9:
+                        plateTable = checkTwoNumAhead(rindex=cindex, objTable=plateTable)
         """        
         #숫자가 있을 때 다른 문자 안에 포함되면 삭제한다.
         boxes = plateTable[:,2:]
