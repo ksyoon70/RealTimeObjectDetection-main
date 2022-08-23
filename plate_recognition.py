@@ -113,138 +113,143 @@ start_time = time.time() # strat time
 RESIZE_IMAGE_WIDTH = 320
 RESIZE_IMAGE_HEIGHT = 320
 
-for filename in os.listdir(images_dir):
-    cnt += 1
-    image_path = os.path.join(images_dir,filename)
-    if os.path.exists(image_path) :
-        imgRGB  = imread(image_path)
-        #imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image_np = np.array(imgRGB)
-        
-        src_height, src_width, scr_ch = image_np.shape
-        
-        
-        
-        src_box = [0,0,1,1]
-        det_image_np = extract_sub_image(image_np,src_box,RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_WIDTH,fixratio=True)
-        #plt.imshow(det_image_np)
-        #plt.show()
-        input_tensor = tf.convert_to_tensor(np.expand_dims(det_image_np, 0), dtype=tf.float32)
-        detections = detect_fn(input_tensor, detection_model)
-        
-        num_detections = int(detections.pop('num_detections'))
-        detections = {key: value[0, :num_detections].numpy()
-                      for key, value in detections.items()}
-        detections['num_detections'] = num_detections
+try:
 
-        # detection_classes should be ints.
-        detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
-        
-        label_id_offset = 1
-        image_np_with_detections = image_np.copy()
-        
-        #인식율이 일정값 이상이면 번호판을 추출한다.
-
-        if detections['detection_scores'][0] > THRESH_HOLD :
-            class_index = detections['detection_classes'][0]+label_id_offset
-            #print("'클래스:{0} 번호판 타입 {1} 확률:{2:.3f}".format(class_index,category_index[class_index]['name'],detections['detection_scores'][0]))
-            #print('box= {}'.format(detections['detection_boxes'][0]))
-            box = list(range(0,4))
-            box = detections['detection_boxes'][0]
-            height, width, ch = image_np.shape
-            # box_sy = int(height*box[0])
-            # box_sx= int(width*box[1])
-            # box_ey = int(height*box[2])
-            # box_ex= int(width*box[3])
+    for filename in os.listdir(images_dir):
+        cnt += 1
+        image_path = os.path.join(images_dir,filename)
+        if os.path.exists(image_path) :
+            imgRGB  = imread(image_path)
+            #imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image_np = np.array(imgRGB)
             
-            if src_width >= src_height :
-                # x 좌표는 그대로 쓴다.
-                box_sx= int(width*box[1])
-                box_ex= int(width*box[3])
-                # y 좌표는 수정한다.
-                # 상위 black 부분 
-                up_black = (src_width - src_height)/2.0
-                box_sy = int(box[0]*src_width - up_black)
-                box_ey = int(box[2]*src_width - up_black)
-            else :
-                # y 좌표는 그대로 쓴다.
-                box_sy= int(width*box[0])
-                box_ey= int(width*box[2])
-                # y 좌표는 수정한다.
-                # 좌측 black 부분 
-                left_black = (src_height - src_width)/2.0
-                box_sx = int(box[1]*src_height - left_black)
-                box_ex = int(box[3]*src_height - left_black)
+            src_height, src_width, scr_ch = image_np.shape
             
-            plate_np = image_np[box_sy:box_ey,box_sx:box_ex,:]
-            #plt.imshow(plate_np)
+            
+            
+            src_box = [0,0,1,1]
+            det_image_np = extract_sub_image(image_np,src_box,RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_WIDTH,fixratio=True)
+            #plt.imshow(det_image_np)
             #plt.show()
+            input_tensor = tf.convert_to_tensor(np.expand_dims(det_image_np, 0), dtype=tf.float32)
+            detections = detect_fn(input_tensor, detection_model)
             
-            plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB)                
-            #번호판을 320x320 크기로 정규화 한다.
-            desired_size = max(RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_HEIGHT)
-            old_size = [plate_img.shape[1],plate_img.shape[0]]
-            ratio = float(desired_size)/max(old_size)
-            new_size = tuple([int(x*ratio) for x in old_size])
-            #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
-            cropped_img = cv2.resize(plate_img,new_size,interpolation=cv2.INTER_AREA)
-            plate_new_img_np = np.zeros((desired_size, desired_size, 3), dtype = "uint8")
-            h = new_size[1]
-            w = new_size[0]
-            yoff = round((desired_size-h)/2)
-            xoff = round((desired_size-w)/2)
-            #320x320영상에 번호판을 붙여 넣는다.
-            plate_new_img_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img            
-            #번호판에 대하여 문자 및 번호를 인식한다.
-            plate_str = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index)
+            num_detections = int(detections.pop('num_detections'))
+            detections = {key: value[0, :num_detections].numpy()
+                        for key, value in detections.items()}
+            detections['num_detections'] = num_detections
+
+            # detection_classes should be ints.
+            detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
             
-            basefilename, ext = os.path.splitext(filename)
+            label_id_offset = 1
+            image_np_with_detections = image_np.copy()
             
-            plate_new_img_np = cv2.cvtColor(plate_new_img_np, cv2.COLOR_RGB2BGR)
-           
+            #인식율이 일정값 이상이면 번호판을 추출한다.
+
+            if detections['detection_scores'][0] > THRESH_HOLD :
+                class_index = detections['detection_classes'][0]+label_id_offset
+                #print("'클래스:{0} 번호판 타입 {1} 확률:{2:.3f}".format(class_index,category_index[class_index]['name'],detections['detection_scores'][0]))
+                #print('box= {}'.format(detections['detection_boxes'][0]))
+                box = list(range(0,4))
+                box = detections['detection_boxes'][0]
+                height, width, ch = image_np.shape
+                # box_sy = int(height*box[0])
+                # box_sx= int(width*box[1])
+                # box_ey = int(height*box[2])
+                # box_ex= int(width*box[3])
+                
+                if src_width >= src_height :
+                    # x 좌표는 그대로 쓴다.
+                    box_sx= int(width*box[1])
+                    box_ex= int(width*box[3])
+                    # y 좌표는 수정한다.
+                    # 상위 black 부분 
+                    up_black = (src_width - src_height)/2.0
+                    box_sy = int(box[0]*src_width - up_black)
+                    box_ey = int(box[2]*src_width - up_black)
+                else :
+                    # y 좌표는 그대로 쓴다.
+                    box_sy= int(width*box[0])
+                    box_ey= int(width*box[2])
+                    # y 좌표는 수정한다.
+                    # 좌측 black 부분 
+                    left_black = (src_height - src_width)/2.0
+                    box_sx = int(box[1]*src_height - left_black)
+                    box_ex = int(box[3]*src_height - left_black)
+                
+                plate_np = image_np[box_sy:box_ey,box_sx:box_ex,:]
+                #plt.imshow(plate_np)
+                #plt.show()
+                
+                plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB)                
+                #번호판을 320x320 크기로 정규화 한다.
+                desired_size = max(RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_HEIGHT)
+                old_size = [plate_img.shape[1],plate_img.shape[0]]
+                ratio = float(desired_size)/max(old_size)
+                new_size = tuple([int(x*ratio) for x in old_size])
+                #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
+                cropped_img = cv2.resize(plate_img,new_size,interpolation=cv2.INTER_AREA)
+                plate_new_img_np = np.zeros((desired_size, desired_size, 3), dtype = "uint8")
+                h = new_size[1]
+                w = new_size[0]
+                yoff = round((desired_size-h)/2)
+                xoff = round((desired_size-w)/2)
+                #320x320영상에 번호판을 붙여 넣는다.
+                plate_new_img_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img            
+                #번호판에 대하여 문자 및 번호를 인식한다.
+                plate_str = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index)
+                
+                basefilename, ext = os.path.splitext(filename)
+                
+                plate_new_img_np = cv2.cvtColor(plate_new_img_np, cv2.COLOR_RGB2BGR)
             
-            gtrue_label = filename.split('_')[1]
-            gtrue_label = gtrue_label[0:-4]
-            
-            xfind = plate_str.find('x')
-            
-            yfind = gtrue_label.find('영')
-            
-            #영자를 삭제한다.
-            if yfind >= 0 :
-                gtrue_label = gtrue_label.replace('영','')
-            
-            
-            
-            if xfind == -1 :
-                recog_count += 1
-                if(gtrue_label == plate_str) :
-                    true_recog_count += 1
-                    result_file = os.path.join(result_dir, basefilename + '_' + plate_str + ext)
-                else:
-                    #오인식인 경우
-                    false_recog_count += 1
-                    result_file = os.path.join(wrong_recog_dir, basefilename + '_' + plate_str + ext)
-                    shutil.copy(image_path, os.path.join(wrong_recog_dir,os.path.basename(image_path)))
+                
+                gtrue_label = filename.split('_')[1]
+                gtrue_label = gtrue_label[0:-4]
+                
+                xfind = plate_str.find('x')
+                
+                yfind = gtrue_label.find('영')
+                
+                #영자를 삭제한다.
+                if yfind >= 0 :
+                    gtrue_label = gtrue_label.replace('영','')
+                
+                
+                
+                if xfind == -1 :
+                    recog_count += 1
+                    if(gtrue_label == plate_str) :
+                        true_recog_count += 1
+                        result_file = os.path.join(result_dir, basefilename + '_' + plate_str + ext)
+                    else:
+                        #오인식인 경우
+                        false_recog_count += 1
+                        result_file = os.path.join(wrong_recog_dir, basefilename + '_' + plate_str + ext)
+                        shutil.copy(image_path, os.path.join(wrong_recog_dir,os.path.basename(image_path)))
+                        
+                else :
+                    fail_count += 1
+                    result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)
                     
             else :
                 fail_count += 1
                 result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)
-                
-        else :
-            fail_count += 1
-            result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)
-        
-        imwrite( result_file, plate_new_img_np)
             
+            imwrite( result_file, plate_new_img_np)
                 
-end_time = time.time()        
-print("수행시간: {:.2f}".format(end_time - start_time))
-print("건당 수행시간 : {:.2f}".format((end_time - start_time)/total_test_files))             
-print('인식률: {:}'.format(recog_count) +'  ({:.2f})'.format(recog_count*100/total_test_files) + ' %')
-print('정인식: {:}'.format(true_recog_count) +'  ({:.2f})'.format(true_recog_count*100/recog_count) + ' %')
-print('오인식: {:}'.format(false_recog_count) +'  ({:.2f})'.format(false_recog_count*100/recog_count) + ' %')
-print('인식실패: {}'.format(fail_count) +'  ({:.2f})'.format(fail_count*100/total_test_files) + ' %')              
+                    
+    end_time = time.time()        
+    print("수행시간: {:.2f}".format(end_time - start_time))
+    print("건당 수행시간 : {:.2f}".format((end_time - start_time)/total_test_files))             
+    print('인식률: {:}'.format(recog_count) +'  ({:.2f})'.format(recog_count*100/total_test_files) + ' %')
+    print('정인식: {:}'.format(true_recog_count) +'  ({:.2f})'.format(true_recog_count*100/recog_count) + ' %')
+    print('오인식: {:}'.format(false_recog_count) +'  ({:.2f})'.format(false_recog_count*100/recog_count) + ' %')
+    print('인식실패: {}'.format(fail_count) +'  ({:.2f})'.format(fail_count*100/total_test_files) + ' %')  
+    
+except Exception as e:
+            pass            
 
         
         

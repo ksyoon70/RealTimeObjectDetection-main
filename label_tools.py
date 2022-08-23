@@ -133,7 +133,7 @@ def splitPlateName(filename):
     return region, type_ch, usage, number, isyoung, recogstr
 
 
-twolinePlate = [1,2,4,6,7]
+twolinePlate = [1,2,4,6,7]  #tyep9는 3자리 번호판
 
 
 def IoU(box1, box2):
@@ -380,6 +380,19 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                         
             if twolineTalbe.size :
                 twolineTalbe = twolineTalbe[twolineTalbe[:,-1].argsort()]
+                twolineTalbescore = twolineTalbe[:,0]
+                result = np.where(twolineTalbescore == 11)
+                #용도문자 이후 오른쪽 숫자가 4개 이상이면 스코어에 따라서 삭제한다.
+                if len(result) and len(result[0]) > 0 :  # Char 첫글자 가로 지역문자이면...
+                    cindex = result[0][0]
+                    res = twolineTalbe[cindex + 1:,:]
+                    if res.shape[1] > 4:
+                        res = res[(-res[:,1]).argsort()[:4]] #스코어 순으로 4개만 추린다.
+                        #다시 정렬한다.
+                        res = res[res[:,-1].argsort()]
+                        arr = twolineTalbe[0 : cindex + 1]
+                        arr = np.concatenate([arr,res],axis=0)
+                        twolineTalbe = arr
             if onelineTable.size and twolineTalbe.size:
                 plateTable = np.append(onelineTable,twolineTalbe, axis=0)
             elif onelineTable.size:
@@ -390,6 +403,19 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
         else:
                 onelineTable = objTable
                 plateTable = onelineTable[onelineTable[:,-1].argsort()]
+                onelineTalbescore = plateTable[:,0]
+                result = np.where(onelineTalbescore == 11)
+                #용도문자 이후 오른쪽 숫자가 4개 이상이면 스코어에 따라서 삭제한다.
+                if len(result) and len(result[0]) > 0 :  # Char 첫글자 가로 지역문자이면...
+                    cindex = result[0][0]
+                    res = plateTable[cindex + 1:,:]
+                    if res.shape[1] > 4:
+                        res = res[(-res[:,1]).argsort()[:4]] #스코어 순으로 4개만 추린다.
+                        #다시 정렬한다.
+                        res = res[res[:,-1].argsort()]
+                        arr = plateTable[0 : cindex + 1]
+                        arr = np.concatenate([arr,res],axis=0)
+                        plateTable = arr
         """        
         #숫자가 있을 때 다른 문자 안에 포함되면 삭제한다.
         boxes = plateTable[:,2:]

@@ -30,7 +30,7 @@ VR_WEIGHT_PATH = None #os.path.join(ROOT_DIR,VR_MODEL_DIR,WEIGHT_FILE_NAME)
 CATEGORIES_FILE_NAME = 'vregion_categories.txt'
 CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,VR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
-VR_THRESH_HOLD = 0.5
+VR_THRESH_HOLD = 0.9
 #----------------------------
 
 #read model

@@ -30,7 +30,7 @@ OR_WEIGHT_PATH = None #os.path.join(ROOT_DIR,HR_MODEL_DIR,WEIGHT_FILE_NAME)
 CATEGORIES_FILE_NAME = 'oregion_categories.txt'
 CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,OR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
-OR_THRESH_HOLD = 0.8
+OR_THRESH_HOLD = 0.9
 #----------------------------
 
 #read model
