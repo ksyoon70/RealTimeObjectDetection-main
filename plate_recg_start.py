@@ -28,6 +28,11 @@ from plate_char_infer import *
 from plate_hr_infer import *
 from plate_vr_infer import *
 from plate_or_infer import *
+from label_tools import *
+
+#로그에서 warining을 삭제할때 아래 코드를 사용한다.
+import logging
+logging.getLogger('tensorflow').disabled = True
 
 
 #========================
@@ -36,8 +41,10 @@ dataset_category='plate'
 test_dir_name = 'test'
 show_image = True
 save_image = True
+save_true_recog_image = False          #정인식 영상 저장 여부
 THRESH_HOLD = 0.1
 IS_RESULT_DIR_REMOVE = True #결과 디렉토리 삭제 여부
+MAKE_JSON_FILE  = True                 #json 파일 생성 여부
 #========================
 
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
@@ -53,8 +60,12 @@ images_dir = os.path.join(IMAGE_PATH,test_dir_name)
 result_dir = os.path.join(IMAGE_PATH,'result')
 no_recog_dir = os.path.join(result_dir,'no_recog')
 wrong_recog_dir = os.path.join(result_dir,'wrong_recog') #오인식
+json_dir = os.path.join(IMAGE_PATH,'json')      #json 파일 생성 디렉토리
 
 #result 디렉토리 삭제여부
+if not os.path.isdir(result_dir):
+	os.mkdir(result_dir)
+    
 if IS_RESULT_DIR_REMOVE :
     shutil.rmtree(result_dir)
 
@@ -68,6 +79,9 @@ if not os.path.isdir(no_recog_dir):
 #오인식 이면 오인식 폴더에 넣는다.
 if not os.path.isdir(wrong_recog_dir):
 	os.mkdir(wrong_recog_dir)
+# json 디렉토리가 있으면 삭제한다. 
+if not os.path.isdir(json_dir):
+    	os.mkdir(json_dir)
 
 # Load pipeline config and build a detection model
 configs = config_util.get_configs_from_pipeline_file(CONFIG_PATH)
@@ -118,6 +132,9 @@ try:
     for filename in os.listdir(images_dir):
         cnt += 1
         image_path = os.path.join(images_dir,filename)
+        result_path = os.path.join(result_dir,filename)
+        basefilename, ext = os.path.splitext(filename)
+        right_recog = False
         if os.path.exists(image_path) :
             imgRGB  = imread(image_path)
             #imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -179,6 +196,7 @@ try:
                     box_ex = int(box[3]*src_height - left_black)
                 
                 plate_np = image_np[box_sy:box_ey,box_sx:box_ex,:]
+                plate_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
                 #plt.imshow(plate_np)
                 #plt.show()
                 
@@ -198,14 +216,12 @@ try:
                 #320x320영상에 번호판을 붙여 넣는다.
                 plate_new_img_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img            
                 #번호판에 대하여 문자 및 번호를 인식한다.
-                plate_str = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index)
-                
-                basefilename, ext = os.path.splitext(filename)
-                
+                plate_str, plateTable,category_index_temp, CLASS_DIC = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+
                 plate_new_img_np = cv2.cvtColor(plate_new_img_np, cv2.COLOR_RGB2BGR)
             
                 
-                gtrue_label = filename.split('_')[1]
+                gtrue_label = filename.split('_')[-1]
                 gtrue_label = gtrue_label[0:-4]
                 
                 xfind = plate_str.find('x')
@@ -223,6 +239,7 @@ try:
                     if(gtrue_label == plate_str) :
                         true_recog_count += 1
                         result_file = os.path.join(result_dir, basefilename + '_' + plate_str + ext)
+                        right_recog = True  #정인식이 되었음.
                     else:
                         #오인식인 경우
                         false_recog_count += 1
@@ -232,12 +249,26 @@ try:
                 else :
                     fail_count += 1
                     result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)
+                
+                if save_true_recog_image:  #정인식 영상 저장 이면..
+                    imwrite( result_file, plate_new_img_np)
+                else :
+                    if not right_recog:    #정인식 영상이 아니면 저장한다.
+                        imwrite( result_file, plate_new_img_np)
+                        
+                #json 파일을 저장한다. def makeJson(src_path, image_filename,dst_path, image_shape,category_index, CLASS_DIC,plateTable, plateNumber) 
+                if MAKE_JSON_FILE :
+                    makeJson(src_path=images_dir,image_filename=filename,dst_path=json_dir,image_shape=image_np.shape, 
+                             category_index=category_index_temp,CLASS_DIC=CLASS_DIC,plateTable=plateTable,
+                             plateNumber=plate_str,platebox = plate_box ,plateIndex = class_index,plate_shape = plate_new_img_np.shape, xratio=ratio, add_platenum=True)
+                    
                     
             else :
                 fail_count += 1
-                result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)
+                result_file = os.path.join(no_recog_dir, basefilename + ext)
+                shutil.copy(image_path,result_file)
             
-            imwrite( result_file, plate_new_img_np)
+            
                 
                     
     end_time = time.time()        

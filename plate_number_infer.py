@@ -34,7 +34,9 @@ from plate_char_infer import *
 from plate_hr_infer import *
 from plate_vr_infer import *
 from plate_or_infer import *
-from label_tools import predictPlateNumber, predictPlateNumberODAPI
+from label_tools import *
+from CRNN_Model import *
+import pandas as pd
 
 
 #========================
@@ -43,6 +45,11 @@ dataset_category='plateimage'
 test_dir_name = 'test'
 show_image = True
 save_image = True
+save_char = True                # 문자영역을 저장할지 여부
+CHAR_SAVE_FOLDER_NAME = 'char'
+CRNN_MODEL_USE = True           # CRNN 모델을 사용할지 여부
+crnn_categories = []
+crnn_cat_filename = 'chcrnn_categories.txt'
 #========================
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
 ANNOTATION_PATH = os.path.join(WORKSPACE_PATH,'annotations')
@@ -52,6 +59,8 @@ PCONFIG_PATH = os.path.join( PMODEL_PATH ,'my_ssd_mobnet','pipeline.config')
 PCHECKPOINT_PATH = os.path.join( PMODEL_PATH , 'my_ssd_mobnet')
 
 category_index = None
+
+crnn_model = None
 
 def number_det_init_fn():
     # Load pipeline config and build a detection model
@@ -69,8 +78,37 @@ def number_det_init_fn():
     global LABEL_FILE_CLASS
     LABEL_FILE_CLASS = fLabels[0].values.tolist()
     LABEL_FILE_HUMAN_NAMES = fLabels[1].values.tolist()
-    global CLASS_DIC    
+    global CLASS_DIC
+    crnn_model_name  =  'LSTM_ResNet_epoch_20220912-224908_val_loss_0.2467.h5' 
+    crnn_weight_name =  'LSTM_ResNet50_20220912-224234_weights_epoch_017_val_loss_0.185.h5'
     CLASS_DIC = dict(zip(LABEL_FILE_CLASS, LABEL_FILE_HUMAN_NAMES))
+    
+    global REV_CLASS_DIC
+    REV_CLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[11:111],LABEL_FILE_CLASS[11:111]))
+    
+    global REV_VCLASS_DIC
+    REV_VCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[111:128],LABEL_FILE_CLASS[111:128]))
+    global REV_HCLASS_DIC
+    REV_HCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[128:145],LABEL_FILE_CLASS[128:145]))
+    global REV_OCLASS_DIC
+    REV_OCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[145:162],LABEL_FILE_CLASS[145:162]))
+    global REV_CLASS6_DIC
+    REV_CLASS6_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[162:],LABEL_FILE_CLASS[162:]))
+    
+    global crnn_model
+    global crnn_categories
+    
+    CRNN_CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,'char_crnn_model',crnn_cat_filename)
+    #catLabels = pd.read_csv(CRNN_CATEGORIES_FILE_PATH, header = None ,engine='python)
+    file = open(CRNN_CATEGORIES_FILE_PATH, "r")
+    while True:
+        line = file.readline()
+        if not line:
+            break
+        crnn_categories.append(line.strip())
+
+    file.close()
+    crnn_model = CRNN_Model(model_path=os.path.join(ROOT_DIR,'char_crnn_model',crnn_model_name),weight_path=os.path.join(ROOT_DIR,'char_crnn_model',crnn_weight_name),characters = crnn_categories ,max_length=1)
 
     return number_det_model, category_index
 
@@ -83,7 +121,7 @@ def number_det_fn(image, detection_model):
 
 
 
-def plate_number_detect_fn(models, imageRGB, category_index,platetype_index) :
+def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,result_path) :
 
     image_np = imageRGB
     ndet_model = models[0]
@@ -131,24 +169,46 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index) :
     for index, cindex in enumerate(detections['detection_classes']+label_id_offset) :
         if category_index[cindex]['name'] == 'Char' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
-            ch = char_det_fn(cdet_model,det_image_np)
-            category_index_temp[cindex]['name'] = ch
+            if CRNN_MODEL_USE:
+                #CRNN 모델을 사용하여 문자를 추출합니다.
+                crnn_image_np = np.swapaxes(det_image_np,0,1)
+                crnn_image_np = np.expand_dims(crnn_image_np,0)
+                ch_crnn, probs = crnn_model.predict(crnn_image_np)
+                ch = ch_crnn[0]
+                category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
+                print('한글인식 {} 확률 {:.2f}'.format(ch,probs[0]*100))
+            else:
+                ch = char_det_fn(cdet_model,det_image_np,predict_anyway=save_char)
+                category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
+            if save_char:
+                # 문자영상을 저장하고 싶으면 여기서 저장한다.
+                # 저장 경로 루트
+                result_path_root, filename = os.path.split(result_path)   # 경로와 파일 분리
+                result_path_char = os.path.join(result_path_root,CHAR_SAVE_FOLDER_NAME)
+                if not os.path.isdir(result_path_char):
+                    os.mkdir(result_path_char)
+                basefilename, ext = os.path.splitext(filename)
+                result_save_filename_ch = basefilename + '_' + ch + ext  # 저장할 파일명을 만든다.
+                result_save_fullpath_ch = os.path.join(result_path_char,result_save_filename_ch)
+                det_image_np = cv2.cvtColor(det_image_np, cv2.COLOR_RGB2BGR)
+                imwrite( result_save_fullpath_ch, det_image_np)
+                
         if category_index[cindex]['name'] == 'hReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
             ch = hr_det_fn(hr_det_model,det_image_np)
-            category_index_temp[cindex]['name'] = ch
+            category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
             twoLinePlate = True
         if category_index[cindex]['name'] == 'vReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
             ch = vr_det_fn(vr_det_model,det_image_np)
-            category_index_temp[cindex]['name'] = ch
+            category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
         if category_index[cindex]['name'] == 'oReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
             ch = or_det_fn(or_det_model,det_image_np)
-            category_index_temp[cindex]['name'] = ch
+            category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
             twoLinePlate = True
     
-    plate_str =  predictPlateNumberODAPI(detections,platetype_index,category_index_temp, CLASS_DIC, twoLinePlate=twoLinePlate)
+    plate_str, plateTable =  predictPlateNumberODAPI(detections,platetype_index,category_index_temp, CLASS_DIC, twoLinePlate=twoLinePlate)
   
   
     
@@ -156,7 +216,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index) :
         plt.imshow(image_np_with_detections)
         plt.show()
         
-    return plate_str
+    return plate_str, plateTable, category_index_temp, CLASS_DIC
             
 
 

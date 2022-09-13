@@ -3,6 +3,7 @@ OpChungBuk
 OpChungNam
 OpDaeGu
 OpGangwon
+OpGwangJu
 OpGyeongBuk
 OpGyeongGi
 OpGyeongNam

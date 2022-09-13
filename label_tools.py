@@ -5,7 +5,7 @@ Created on Tue Mar 15 14:19:22 2022
 @author:  윤경섭
 """
 
-import os,sys
+import os,sys,shutil
 import pandas as pd
 import cv2
 import argparse
@@ -15,6 +15,11 @@ from PIL import Image
 from shutil import copyfile
 import re
 import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib import patches,  lines
+from matplotlib.patches import Polygon
+import matplotlib.image as Image
 
 
 # NpEncoder class ================================================================
@@ -357,18 +362,21 @@ def classIdDoubleCheck(class_id,objTable) :
     return objTable    
 
 def checkTwoNumAhead(rindex, objTable) :
+    NUM_TH_HOLD = 0.7  #숫자 쓰레쉬 홀드
     if rindex <= 1 :
         return objTable
     else :
+        print('table {}'.format(objTable))
         numTable = objTable[0:rindex,:]
-        if numTable[0,0] > 10 : #즉 숫자가 아니면.
+        if numTable[0,0] > 10 : #첫번째 오브젝트가 즉 숫자가 아니면.
             arr_index = [0]
             arr_index1 = numTable[1:,1].argsort() + 1
             if arr_index1.size > 2: #즉 숫자가 2개 이상이면...
                 objTable = np.delete(objTable,arr_index1[0].item(),0)
         else : # score 별로 소팅
             arr_index1 = numTable[0:,1].argsort()
-            if arr_index1.size > 2: #즉 숫자가 2개 이상이면...
+            score = objTable[arr_index1[0].item(),1]
+            if arr_index1.size > 2 and score < NUM_TH_HOLD: #즉 숫자가 2개 이상이면...
                 objTable = np.delete(objTable,arr_index1[0].item(),0) 
         return objTable
 # 오직 1개의 region만 존재 하도록 한다.
@@ -430,12 +438,35 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
     if(num_detections > 1):
         plate2line = False
         # 번호판 상하단 구분 위한 코드
-        ref = objTable[:,2].mean(axis = 0)
+        #ref = objTable[:,2].mean(axis = 0)
+        
+        #y 높이 순으로 정렬
+        v_order_arr = objTable[objTable[:,2].argsort()]
+        # y 갋만 뽑음
+        ycol1 = v_order_arr[:,2]
+        # 한개 차이로 
+        ycol2 = ycol1[1:]
+        ycol2 = np.append(ycol2,ycol2[-1])
+        result = ycol2 - ycol1
+        ref = result.argmax()
+        
         type = platetype_index
-        if type in twolinePlate or twoLinePlate :
-            plate2line = True
-            print("2line")
+        # if type in twolinePlate or twoLinePlate :
+        #     plate2line = True
+        #     print("2line")
+        # else:
+        #     print("1line")
+        
+        box_height = v_order_arr[:,4] - v_order_arr[:,2]  # box 놀이를 구한다.
+
+        if ref > 0 and ref < len(result) - 1 :
+            upbox_avr =  Average(box_height[:ref+1])
+            if result[ref] > upbox_avr/2:
+                plate2line = True
+                print("2line")
+            
         else:
+            plate2line = False
             print("1line")
         plateTable = []
         if plate2line :
@@ -444,8 +475,8 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
             onelineTable = []
             twolineTalbe = []
             
-            for type in objTable:
-                if type[2] <= ref :
+            for index ,type in enumerate(v_order_arr):
+                if index <= ref :
                     onelineTable.append(list(type))
                 else:
                     twolineTalbe.append(list(type))
@@ -530,14 +561,11 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
         num_detections = plateTable.shape[0] #갯수가 바뀔수 있다.
         for i in range(0,num_detections) :
             class_index = int(plateTable[i][0])
-            if class_index <= 10 :
-                name = category_index[class_index]['name']
-                plate_str = plate_str + CLASS_DIC[name]
-            else :
-                plate_str = plate_str + category_index[class_index]['name']
-    
-    print("SSD 인식 내용 {0}".format(plate_str))
-    return plate_str            
+            label = category_index[class_index]['name']
+            plate_str = plate_str + CLASS_DIC[label]
+   
+    print("번호 인식: {0}".format(plate_str))
+    return plate_str , plateTable           
             
 def imread(filename, flags=cv2.IMREAD_COLOR, dtype=np.uint8):
     try:
@@ -561,5 +589,307 @@ def imwrite(filename, img, params=None):
             return False
     except Exception as e:
         print(e)
-        return False              
+        return False       
+            
+def equalizeHist(src) :
+    # src_ycrcb = cv2.cvtColor(src, cv2.COLOR_BGR2YCrCb)
+    # ycrcb_planes = np.asarray(cv2.split(src_ycrcb))
+    
+    
+    # # 밝기 성분에 대해서만 히스토그램 평활화 수행
+    # ycrcb_planes[0] = cv2.equalizeHist(ycrcb_planes[0])
+    
+    # dst_ycrcb = cv2.merge(ycrcb_planes)
+    # dst = cv2.cvtColor(dst_ycrcb, cv2.COLOR_YCrCb2BGR)
+    img_yuv = cv2.cvtColor(src, cv2.COLOR_BGR2YUV)
+    img_clahe = img_yuv.copy()
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8)) #CLAHE 생성
+    img_clahe[:,:,0] = clahe.apply(img_clahe[:,:,0])           #CLAHE 적용
+    img_clahe = cv2.cvtColor(img_clahe, cv2.COLOR_YUV2BGR)
+    
+    return img_clahe
 
+
+def rgb2gray(src_img):
+    
+    src_img[:,:,0] = (src_img[:,:,0]*0.2126 + src_img[:,:,1]* 0.7152 + src_img[:,:,2]* 0.0722)
+
+    return src_img
+# 리스트의 평균을 구하는 함수이다.
+def Average(lst):
+    return sum(lst) / len(lst) 
+
+# json 파일내용에서 번호판 내용을 읽어오는 함수이다.
+# json_data : json data 
+# enlable : english label
+# human_dic : english label to 한글 레이블 변환 딕셔너리
+def GetPlateNameFromJson(json_data , enlabel, human_dic ) :
+    
+    class_label = enlabel[1:]
+    num_char_lable = enlabel[11:]
+    plate_label = enlabel[1:11]
+    json_data['imageData'] = None  
+    #object의 시작 위치이다.
+    box_sx = None
+    box_sy = None
+    #object 종료 위치이다.
+    box_ex = None
+    box_ey = None
+    #object 넓이 높이 이다.
+    box_width = None
+    box_height = None
+    
+    crop_polygon = None
+    
+    find_object = False
+    obj_name_ext = None
+        
+    image_width = int (json_data['imageWidth'])
+    image_height = int (json_data['imageHeight'])  
+
+    objTable = []
+    num_detections = 0 
+    platetype_index = 0
+
+    for item, shape in enumerate(json_data['shapes']):
+        label = shape['label']
+        
+        if label in class_label:
+
+            if label in plate_label :
+                platetype_index = plate_label.index(label) + 1
+            elif label in num_char_lable:
+
+                obj_name_ext = human_dic[label]
+                points = np.array(shape['points']).astype(int) # numpy로 변형
+                shape_type = shape['shape_type']
+                
+                # rectangle 형태이면 폴리곤 타입으로 바꾸어 준다.
+                tpoints = []
+                if shape_type == 'rectangle':
+                    tpoints = box2polygon(points) #test point를 polygon으로 만든다.
+                else:
+                    tpoints = points
+                    
+                #줄이기 전에 잘라낼 위치를 정한다.
+                box_xs = points[:,0]
+                box_ys = points[:,1]
+
+                box_sx = np.min(box_xs,axis=0)
+                if box_sx < 0:
+                    box_sx = 0
+                box_sy = np.min(box_ys,axis=0)
+                if box_sy < 0:
+                    box_sy = 0
+                box_ex = np.max(box_xs,axis=0) 
+                if box_ex >= image_width:
+                    box_ex = image_width - 1
+                box_ey = np.max(box_ys,axis=0)
+                if box_ey >= image_height:
+                    cropey = image_height - 1
+                box_width =  box_ex - box_sx
+                box_height = box_ey - box_sy
+                
+                box = [box_sy, box_sx, box_ey, box_ex]
+                
+                class_id = class_label.index(label)
+
+                item = [class_id, 100, box[0],box[1],box[2],box[3]]
+                num_detections += 1
+                objTable.append(item)
+        
+    objTable = np.array(objTable)
+    
+    plate_str = "" # 번호판 문자
+    if(num_detections > 1):
+        plate2line = False
+        # 번호판 상하단 구분 위한 코드
+        #y 높이 순으로 정렬
+        v_order_arr = objTable[objTable[:,2].argsort()]
+        # y 갋만 뽑음
+        ycol1 = v_order_arr[:,2]
+        # 한개 차이로 
+        ycol2 = ycol1[1:]
+        ycol2 = np.append(ycol2,ycol2[-1])
+        result = ycol2 - ycol1
+        ref = result.argmax()
+        
+        box_height = v_order_arr[:,4] - v_order_arr[:,2]  # box 놀이를 구한다.
+
+        if ref >= 0 and ref < len(result) - 1 :
+            upbox_avr =  Average(box_height[:ref+1])
+            if result[ref] > upbox_avr/2:
+                plate2line = True
+                #print("2line")
+            
+        else:
+            plate2line = False
+            #print("1line")
+
+        plateTable = []
+        if plate2line :
+            # 2line 번호판이면...
+            # 1line 과 2line으로 나눈다.
+            onelineTable = []
+            twolineTalbe = []
+            
+            for ix, type in enumerate(v_order_arr):
+                if ix <= ref :
+                    onelineTable.append(list(type))
+                else:
+                    twolineTalbe.append(list(type))
+            onelineTable = np.array(onelineTable)
+            twolineTalbe = np.array(twolineTalbe)
+            if onelineTable.size :
+                onelineTable = onelineTable[onelineTable[:,-1].argsort()] #onelineTable[:,3].argsort() 순서대로 인덱스를 반환
+            if twolineTalbe.size :
+                twolineTalbe = twolineTalbe[twolineTalbe[:,-1].argsort()]
+            if onelineTable.size and twolineTalbe.size:
+                plateTable = np.append(onelineTable,twolineTalbe, axis=0)
+            elif onelineTable.size:
+                plateTable =  onelineTable
+            elif twolineTalbe.size:
+                plateTable =  twolineTalbe
+
+        else:
+                onelineTable = objTable
+                plateTable = onelineTable[onelineTable[:,-1].argsort()]    
+        #print("plateTable : {0}".format(plateTable))
+    
+        for i in range(0,num_detections) :
+            class_index = int(plateTable[i][0])
+            name = class_label[class_index]
+            plate_str = plate_str + human_dic[name]
+    
+        #print("SSD 인식 내용 {0}".format(plate_str)) 
+        
+        return plate_str 
+    
+def extract_sub_image(src_np, box, width, height, fixratio=False):
+    src_height, src_width, ch = src_np.shape
+    box_sy = int(src_height*box[0])
+    box_sx= int(src_width*box[1])
+    box_ey = int(src_height*box[2])
+    box_ex= int(src_width*box[3])
+    obj_img = src_np[box_sy:box_ey,box_sx:box_ex,:]
+    
+    #번호판을 320x320 크기로 정규화 한다.
+    if fixratio :
+        desired_size = max(height,width)
+        old_size = [obj_img.shape[1],obj_img.shape[0]]
+        ratio = float(desired_size)/max(old_size)
+        new_size = tuple([int(x*ratio) for x in old_size])
+        #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
+        cropped_img = cv2.resize(obj_img,new_size,interpolation=cv2.INTER_LINEAR)
+        dst_np = np.zeros((desired_size, desired_size, 3), dtype = "uint8")
+        #dst_np = cv2.cvtColor(dst_np, cv2.COLOR_BGR2RGB)
+        h = new_size[1]
+        w = new_size[0]
+        yoff = round((desired_size-h)/2)
+        xoff = round((desired_size-w)/2)
+        #320x320영상에 번호판을 붙여 넣는다.
+        dst_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img        
+    else :
+        desired_size = (height,width)
+        #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
+        dst_np = cv2.resize(obj_img,desired_size,interpolation=cv2.INTER_LINEAR)
+        plt.imshow(dst_np)
+        plt.show()
+
+    return dst_np
+
+#json 파일을 만든다.
+# src_path 이미지의 디렉토리
+# image_filename 이미지의 파일이름
+# 저장 디렉토리 dst_path
+# 이미지 shaep image_shape height, width channel
+# CLASS_DIC label 과 사람이 인식하는 문자의 딕셔너리
+# plateTable  plate table class번호, 확률, y, x, y ,x
+# plateNumber 인식한 번호
+# platebox 번호판 실제 좌표 정규화 아님.
+# plateIndex 번호판 type  type1 ~ type9
+# plate_shape 번호판 리싸이즈 한 크기 320x320
+# xratio 원래 번호판에서 320x320으로 변환 하였을때 ratio
+# add_platenum 인식한 번호판 내용을 붙일지 여부
+def makeJson(src_path, image_filename,dst_path, image_shape,category_index, CLASS_DIC,plateTable, plateNumber,platebox,plateIndex,plate_shape,xratio,add_platenum = True) :
+    #platetable의 첫번째 숫자는
+    # 1 ~ 10 1, 2, 3 ... 0
+    # 11 Char
+    # 12 vReg
+    # 13 hReg
+    # 14 oReg
+    commercial = False #영 포함 여부
+    json_data = OrderedDict()
+    json_data['version'] = '5.0.1'
+    json_data['flags'] = {}
+    
+    shapes=[]
+    
+    json_data['shapes'] = shapes
+    
+    json_data['imageData'] = None
+    json_data['imageHeight'] = image_shape[0]
+    json_data['imageWidth'] = image_shape[1]
+
+    num_detections = plateTable.shape[0]
+    
+    for ix in range(0,num_detections) :
+        class_index = int(plateTable[ix][0])
+        label = category_index[class_index]['name']
+        str =  CLASS_DIC[label]
+        if class_index == 11 :  #용도문자
+          json_data['usage'] = str
+          json_data['type'] = str # 타입숫자 ?
+        if class_index >= 12 :  #지역문자
+          json_data['region'] = str
+          if  class_index == 14 :
+              commercial = True
+        x1 = plateTable[ix][3]  # 이 좌표는 전체 영상 기준으로 한다.
+        x2 = plateTable[ix][5]
+        x3 = plateTable[ix][5]
+        x4 = plateTable[ix][3]
+        y1 = plateTable[ix][2]
+        y2 = plateTable[ix][4]
+        y3 = plateTable[ix][4]
+        y4 = plateTable[ix][2]
+        points_x = [ x1, x2, x2, x1]
+        points_y = [ y1, y1, y2, y2]
+        old_y = platebox[1][2] - platebox[1][0]  #원래 번호판 높이
+        plate_real_height = old_y * xratio #320으로 변형 했을때 확대된 번호판 높이
+        half_dummy_height = (plate_shape[1] - plate_real_height)/2  #상단 더미 높이
+        half_dummy_ratio = half_dummy_height / plate_shape[0]
+        points_x = [points_x[i]*plate_shape[1]/xratio + platebox[0][0]  for i in range(len(points_x))] #320 기준으로 좌표를 변환하고, 다시 전체영상 기준으로 바꾼다.
+        points_y = [(points_y[i] - half_dummy_ratio)*plate_shape[0]/xratio + platebox[1][0]  for i in range(len(points_y))]
+        insertlabel_with_xypoints(shapes,points_x,points_y,label=label)
+        
+    # 번호판 타입을 추가한다.
+    label = 'type{}'.format(plateIndex)
+    insertlabel_with_xypoints(shapes,platebox[0],platebox[1],label=label)
+ 
+    json_data['number'] = plateNumber
+    
+    if commercial:
+        json_data['commercial'] = commercial['bool']
+    else :
+        json_data['commercial'] = None
+        
+   
+    
+    basefilename, ext = os.path.splitext(image_filename)
+    if add_platenum :
+        basefilename = basefilename + '_' + plateNumber
+        json_data['imagePath'] = basefilename + ext
+    else:
+        json_data['imagePath'] = image_filename
+        
+    ofilename = os.path.join(dst_path,basefilename)
+    
+    # json 파일을 저장한다.
+    with open( ofilename +'.json','w', encoding='utf-8') as f:
+            json.dump(json_data,f,ensure_ascii=False,indent="\t" , cls=NpEncoder)
+            
+    src_file = os.path.join(src_path,image_filename)
+    ofilename = ofilename + ext
+    dst_file = os.path.join(dst_path,ofilename)
+    #영상 파일 복사한다.
+    shutil.copyfile(src_file, dst_file)

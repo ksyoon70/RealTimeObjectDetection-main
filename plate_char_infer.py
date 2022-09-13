@@ -63,7 +63,7 @@ def char_det_init_fn():
     return model
 
 
-def char_det_fn(model, img_np) :
+def char_det_fn(model, img_np, predict_anyway = False) :
     img_np = np.expand_dims(img_np,axis=0)
     preds = model.predict(img_np)
     index = np.argmax(preds[0],0)
@@ -72,7 +72,13 @@ def char_det_fn(model, img_np) :
         predic_label = CLASS_DIC[categories[index]]
         print('predict:{}'.format(predic_label))
     else:
-        predic_label = 'x'
+        if predict_anyway :     #확률에 관계 없이 무조건 인식한 값을 원할 경우
+            predic_label = CLASS_DIC[categories[index]]
+        else :                  # 일반적으로 확률이 낮으면 x 값을 리턴한다.
+            predic_label = 'x'
+        
+        predic_label1 = CLASS_DIC[categories[index]]
+        print('predict ?:{}'.format(predic_label1))
         
     print('확률:{}%'.format(preds[0][index]*100 ))
     return  predic_label
