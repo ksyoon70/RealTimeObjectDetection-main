@@ -50,6 +50,11 @@ CHAR_SAVE_FOLDER_NAME = 'char'
 CRNN_MODEL_USE = True           # CRNN 모델을 사용할지 여부
 crnn_categories = []
 crnn_cat_filename = 'chcrnn_categories.txt'
+REG_CRNN_MODEL_USE = True       #지역번판에 CRNN 사용여부
+reg_crnn_categories = []
+reg_crnn_cat_filename = 'regcrnn_categories.txt'
+CHAR_CRNN_MODEL_DIR = 'char_crnn_model'      #CRNN 모델 위치 
+REG_CRNN_MODEL_DIR = 'reg_crnn_model'      #CRNN 모델 위치 
 #========================
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
 ANNOTATION_PATH = os.path.join(WORKSPACE_PATH,'annotations')
@@ -61,7 +66,12 @@ PCHECKPOINT_PATH = os.path.join( PMODEL_PATH , 'my_ssd_mobnet')
 category_index = None
 
 crnn_model = None
+CHAR_CRNN_MODEL_PATH = None
+CHAR_CRNN_WEIGHT_PATH = None
 
+reg_crnn_model = None
+REG_CRNN_MODEL_PATH = None
+REG_CRNN_WEIGHT_PATH = None
 def number_det_init_fn():
     # Load pipeline config and build a detection model
     configs = config_util.get_configs_from_pipeline_file(PCONFIG_PATH)
@@ -79,27 +89,50 @@ def number_det_init_fn():
     LABEL_FILE_CLASS = fLabels[0].values.tolist()
     LABEL_FILE_HUMAN_NAMES = fLabels[1].values.tolist()
     global CLASS_DIC
-    crnn_model_name  =  'LSTM_ResNet_epoch_20220912-224908_val_loss_0.2467.h5' 
-    crnn_weight_name =  'LSTM_ResNet50_20220912-224234_weights_epoch_017_val_loss_0.185.h5'
+    
     CLASS_DIC = dict(zip(LABEL_FILE_CLASS, LABEL_FILE_HUMAN_NAMES))
+    CLASS_DIC['x'] = 'x'
+    
+    # crnn_model_name  =  'LSTM_ResNet_epoch_20220912-224908_val_loss_0.2467.h5' 
+    # crnn_weight_name =  'LSTM_ResNet50_20220912-224234_weights_epoch_017_val_loss_0.185.h5'
+    filelist =  os.listdir(os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR))
+    
+    for fn in filelist :
+        if 'Model' in fn :
+            CHAR_CRNN_MODEL_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,fn)
+           
+        if 'weight' in fn:
+            #read weight value from trained dir
+            CHAR_CRNN_WEIGHT_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,fn)
+            
+    filelist =  os.listdir(os.path.join(ROOT_DIR,REG_CRNN_MODEL_DIR))
+    
+    
     
     global REV_CLASS_DIC
     REV_CLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[11:111],LABEL_FILE_CLASS[11:111]))
+    REV_CLASS_DIC['x'] = 'x'
     
     global REV_VCLASS_DIC
     REV_VCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[111:128],LABEL_FILE_CLASS[111:128]))
+    REV_VCLASS_DIC['x'] = 'x'
     global REV_HCLASS_DIC
     REV_HCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[128:145],LABEL_FILE_CLASS[128:145]))
+    REV_HCLASS_DIC['x'] = 'x'
     global REV_OCLASS_DIC
     REV_OCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[145:162],LABEL_FILE_CLASS[145:162]))
+    REV_OCLASS_DIC['x'] = 'x'
     global REV_CLASS6_DIC
     REV_CLASS6_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[162:],LABEL_FILE_CLASS[162:]))
+    REV_CLASS6_DIC['x'] = 'x'
     
     global crnn_model
     global crnn_categories
-    
-    CRNN_CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,'char_crnn_model',crnn_cat_filename)
-    #catLabels = pd.read_csv(CRNN_CATEGORIES_FILE_PATH, header = None ,engine='python)
+    global reg_crnn_model
+    global reg_crnn_categories
+    #용도문자 CRNN 설정
+    CRNN_CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,crnn_cat_filename)
+
     file = open(CRNN_CATEGORIES_FILE_PATH, "r")
     while True:
         line = file.readline()
@@ -108,7 +141,29 @@ def number_det_init_fn():
         crnn_categories.append(line.strip())
 
     file.close()
-    crnn_model = CRNN_Model(model_path=os.path.join(ROOT_DIR,'char_crnn_model',crnn_model_name),weight_path=os.path.join(ROOT_DIR,'char_crnn_model',crnn_weight_name),characters = crnn_categories ,max_length=1)
+    crnn_model = CRNN_Model(model_path=CHAR_CRNN_MODEL_PATH,weight_path=CHAR_CRNN_WEIGHT_PATH,characters = crnn_categories ,max_length=1)
+    #지역 CRNN 설청
+    if REG_CRNN_MODEL_USE :
+        
+        for fn in filelist :
+            if 'Model' in fn :
+                REG_CRNN_MODEL_PATH = os.path.join(ROOT_DIR,REG_CRNN_MODEL_DIR,fn)
+           
+            if 'weight' in fn:
+                #read weight value from trained dir
+                REG_CRNN_WEIGHT_PATH = os.path.join(ROOT_DIR,REG_CRNN_MODEL_DIR,fn)
+                
+        REG_CRNN_CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,REG_CRNN_MODEL_DIR,reg_crnn_cat_filename)
+
+        file = open(REG_CRNN_CATEGORIES_FILE_PATH, "r")
+        while True:
+            line = file.readline()
+            if not line:
+                break
+            reg_crnn_categories.append(line.strip())
+
+        file.close()
+        reg_crnn_model = CRNN_Model(model_path=REG_CRNN_MODEL_PATH,weight_path=REG_CRNN_WEIGHT_PATH,characters = reg_crnn_categories ,max_length=2)
 
     return number_det_model, category_index
 
@@ -175,7 +230,11 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
                 ch_crnn, probs = crnn_model.predict(crnn_image_np)
                 ch = ch_crnn[0]
+                if ch == '[UNK]':
+                    ch = 'x'
                 category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
+                #검시 확률을 업데이트 한다.
+                detections['detection_scores'][index] = probs[0] 
                 print('한글인식 {} 확률 {:.2f}'.format(ch,probs[0]*100))
             else:
                 ch = char_det_fn(cdet_model,det_image_np,predict_anyway=save_char)
@@ -208,7 +267,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
             category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
             twoLinePlate = True
     
-    plate_str, plateTable =  predictPlateNumberODAPI(detections,platetype_index,category_index_temp, CLASS_DIC, twoLinePlate=twoLinePlate)
+    plate_str, plateTable, plate2line, platetype_index =  predictPlateNumberODAPI(detections,platetype_index,category_index_temp, CLASS_DIC, twoLinePlate=twoLinePlate)
   
   
     
@@ -216,7 +275,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
         plt.imshow(image_np_with_detections)
         plt.show()
         
-    return plate_str, plateTable, category_index_temp, CLASS_DIC
+    return plate_str, plateTable, category_index_temp, CLASS_DIC, platetype_index
             
 
 

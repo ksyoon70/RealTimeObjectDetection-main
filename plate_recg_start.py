@@ -2,7 +2,8 @@
 """
 Created on Mon Feb 21 19:50:19 2022
 
-@author: headway 
+@author: headway
+이 파일은 인식 시작을 하는 파일이다. 
 """
 import os,sys
 import cv2
@@ -45,6 +46,7 @@ save_true_recog_image = False          #정인식 영상 저장 여부
 THRESH_HOLD = 0.1
 IS_RESULT_DIR_REMOVE = True #결과 디렉토리 삭제 여부
 MAKE_JSON_FILE  = True                 #json 파일 생성 여부
+REMOVE_SRC_IMAGE = True                #원본영상 삭제여부
 #========================
 
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
@@ -135,15 +137,13 @@ try:
         result_path = os.path.join(result_dir,filename)
         basefilename, ext = os.path.splitext(filename)
         right_recog = False
+        print('Processing {}'.format(filename))
         if os.path.exists(image_path) :
             imgRGB  = imread(image_path)
             #imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image_np = np.array(imgRGB)
-            
             src_height, src_width, scr_ch = image_np.shape
-            
-            
-            
+
             src_box = [0,0,1,1]
             det_image_np = extract_sub_image(image_np,src_box,RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_WIDTH,fixratio=True)
             #plt.imshow(det_image_np)
@@ -216,13 +216,16 @@ try:
                 #320x320영상에 번호판을 붙여 넣는다.
                 plate_new_img_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img            
                 #번호판에 대하여 문자 및 번호를 인식한다.
-                plate_str, plateTable,category_index_temp, CLASS_DIC = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
 
                 plate_new_img_np = cv2.cvtColor(plate_new_img_np, cv2.COLOR_RGB2BGR)
             
                 
                 gtrue_label = filename.split('_')[-1]
                 gtrue_label = gtrue_label[0:-4]
+                
+                if gtrue_label[-1] == 'c':
+                    gtrue_label = gtrue_label[0:-1]
                 
                 xfind = plate_str.find('x')
                 
@@ -267,6 +270,9 @@ try:
                 fail_count += 1
                 result_file = os.path.join(no_recog_dir, basefilename + ext)
                 shutil.copy(image_path,result_file)
+                
+            if REMOVE_SRC_IMAGE:
+                os.remove(image_path)
             
             
                 

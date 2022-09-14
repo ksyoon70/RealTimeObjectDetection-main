@@ -5,6 +5,7 @@ Created on Tue Mar 15 14:19:22 2022
 @author:  윤경섭
 """
 
+from genericpath import isfile
 import os,sys,shutil
 import pandas as pd
 import cv2
@@ -366,7 +367,7 @@ def checkTwoNumAhead(rindex, objTable) :
     if rindex <= 1 :
         return objTable
     else :
-        print('table {}'.format(objTable))
+        #print('table {}'.format(objTable))
         numTable = objTable[0:rindex,:]
         if numTable[0,0] > 10 : #첫번째 오브젝트가 즉 숫자가 아니면.
             arr_index = [0]
@@ -414,7 +415,17 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
     
     objTable = []
     
+    hReg = False
+    oReg = False
+    vReg = False
+    uChar = False
+    
+    upbox_avr = 0
+    lobox_avr = 0
+    
     num_detections = detect['num_detections']
+    plate2line = False
+    plateTable = []
     
     for i in range(0,num_detections) :
         box = detect['detection_boxes'][i]
@@ -459,8 +470,9 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
         
         box_height = v_order_arr[:,4] - v_order_arr[:,2]  # box 놀이를 구한다.
 
-        if ref > 0 and ref < len(result) - 1 :
+        if ref >= 0 and ref < len(result) - 1 :
             upbox_avr =  Average(box_height[:ref+1])
+            lobox_avr =  Average(box_height[ref+1 :])
             if result[ref] > upbox_avr/2:
                 plate2line = True
                 print("2line")
@@ -468,7 +480,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
         else:
             plate2line = False
             print("1line")
-        plateTable = []
+        
         if plate2line :
             # 2line 번호판이면...
             # 1line 과 2line으로 나눈다.
@@ -563,9 +575,41 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
             class_index = int(plateTable[i][0])
             label = category_index[class_index]['name']
             plate_str = plate_str + CLASS_DIC[label]
-   
-    print("번호 인식: {0}".format(plate_str))
-    return plate_str , plateTable           
+            if class_index == 11:
+                uChar = True
+            elif class_index == 12:
+                vReg = True
+            elif class_index == 13:
+                hReg = True
+            elif class_index == 14:
+                oReg = True
+    else:   # 예외처리
+        plateTable = objTable
+        
+    #번호판 타입을 결정한다.
+    if not plate2line :
+        if vReg == True:
+            platetype_index = 5 # type5와 type10이 있지만, type5로 일단한다.
+        elif len(plate_str) == 8 and uChar == True:
+            platetype_index = 9 # 번호판 글자가 8자이고 용도문자가 있으면 type9(3자리 번호)로 한다.
+        elif len(plate_str) == 7 and uChar == True:
+            platetype_index = 8         #7자리 이면 type8로 정한다.
+        else:
+            platetype_index = 3
+    else :
+        # 2자리 번호판이면.
+        if oReg == True:        # 영 번호판이면.
+            platetype_index = 6
+        elif hReg == True:
+            platetype_index = 1 # type1과 type2가 있지만 일단 type1로 설정
+        elif lobox_avr > upbox_avr*1.5 : #윗쪽 문자 평균 놑이*1.5배 보다 아랫쪽 문자 높이가 크면
+            platetype_index = 4
+        else:
+            platetype_index = 7  #그 외에는 type7번으로 한다.
+        
+    print("번호판 {} 번호 인식: {}".format('2단' if plate2line == True else '1단',plate_str))
+    print('plateTable {}'.format(plateTable))
+    return plate_str , plateTable ,  plate2line,  platetype_index      
             
 def imread(filename, flags=cv2.IMREAD_COLOR, dtype=np.uint8):
     try:
@@ -837,30 +881,31 @@ def makeJson(src_path, image_filename,dst_path, image_shape,category_index, CLAS
         class_index = int(plateTable[ix][0])
         label = category_index[class_index]['name']
         str =  CLASS_DIC[label]
-        if class_index == 11 :  #용도문자
-          json_data['usage'] = str
-          json_data['type'] = str # 타입숫자 ?
-        if class_index >= 12 :  #지역문자
-          json_data['region'] = str
-          if  class_index == 14 :
-              commercial = True
-        x1 = plateTable[ix][3]  # 이 좌표는 전체 영상 기준으로 한다.
-        x2 = plateTable[ix][5]
-        x3 = plateTable[ix][5]
-        x4 = plateTable[ix][3]
-        y1 = plateTable[ix][2]
-        y2 = plateTable[ix][4]
-        y3 = plateTable[ix][4]
-        y4 = plateTable[ix][2]
-        points_x = [ x1, x2, x2, x1]
-        points_y = [ y1, y1, y2, y2]
-        old_y = platebox[1][2] - platebox[1][0]  #원래 번호판 높이
-        plate_real_height = old_y * xratio #320으로 변형 했을때 확대된 번호판 높이
-        half_dummy_height = (plate_shape[1] - plate_real_height)/2  #상단 더미 높이
-        half_dummy_ratio = half_dummy_height / plate_shape[0]
-        points_x = [points_x[i]*plate_shape[1]/xratio + platebox[0][0]  for i in range(len(points_x))] #320 기준으로 좌표를 변환하고, 다시 전체영상 기준으로 바꾼다.
-        points_y = [(points_y[i] - half_dummy_ratio)*plate_shape[0]/xratio + platebox[1][0]  for i in range(len(points_y))]
-        insertlabel_with_xypoints(shapes,points_x,points_y,label=label)
+        if not str == 'x' :  # x가 나오면 인식한게 아니기 때문.
+            if class_index == 11 :  #용도문자
+                json_data['usage'] = str
+                json_data['type'] = str # 타입숫자 ?
+            if class_index >= 12 :  #지역문자
+                json_data['region'] = str
+            if  class_index == 14 :
+                commercial = True
+            x1 = plateTable[ix][3]  # 이 좌표는 전체 영상 기준으로 한다.
+            x2 = plateTable[ix][5]
+            x3 = plateTable[ix][5]
+            x4 = plateTable[ix][3]
+            y1 = plateTable[ix][2]
+            y2 = plateTable[ix][4]
+            y3 = plateTable[ix][4]
+            y4 = plateTable[ix][2]
+            points_x = [ x1, x2, x2, x1]
+            points_y = [ y1, y1, y2, y2]
+            old_y = platebox[1][2] - platebox[1][0]  #원래 번호판 높이
+            plate_real_height = old_y * xratio #320으로 변형 했을때 확대된 번호판 높이
+            half_dummy_height = (plate_shape[1] - plate_real_height)/2  #상단 더미 높이
+            half_dummy_ratio = half_dummy_height / plate_shape[0]
+            points_x = [points_x[i]*plate_shape[1]/xratio + platebox[0][0]  for i in range(len(points_x))] #320 기준으로 좌표를 변환하고, 다시 전체영상 기준으로 바꾼다.
+            points_y = [(points_y[i] - half_dummy_ratio)*plate_shape[0]/xratio + platebox[1][0]  for i in range(len(points_y))]
+            insertlabel_with_xypoints(shapes,points_x,points_y,label=label)
         
     # 번호판 타입을 추가한다.
     label = 'type{}'.format(plateIndex)
@@ -869,13 +914,17 @@ def makeJson(src_path, image_filename,dst_path, image_shape,category_index, CLAS
     json_data['number'] = plateNumber
     
     if commercial:
-        json_data['commercial'] = commercial['bool']
+        json_data['commercial'] = 'True'
     else :
         json_data['commercial'] = None
         
    
     
     basefilename, ext = os.path.splitext(image_filename)
+    
+    if basefilename[-1] == 'c':
+        basefilename =  basefilename[:-1]
+    
     if add_platenum :
         basefilename = basefilename + '_' + plateNumber
         json_data['imagePath'] = basefilename + ext
@@ -892,4 +941,5 @@ def makeJson(src_path, image_filename,dst_path, image_shape,category_index, CLAS
     ofilename = ofilename + ext
     dst_file = os.path.join(dst_path,ofilename)
     #영상 파일 복사한다.
-    shutil.copyfile(src_file, dst_file)
+    if os.path.isfile(src_file) :
+        shutil.copyfile(src_file, dst_file)
