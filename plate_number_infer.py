@@ -254,18 +254,71 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 
         if category_index[cindex]['name'] == 'hReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
-            ch = hr_det_fn(hr_det_model,det_image_np)
-            category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
-            twoLinePlate = True
+            if REG_CRNN_MODEL_USE :
+                #CRNN 모델을 사용하여 문자를 추출합니다.
+                crnn_image_np = np.swapaxes(det_image_np,0,1)
+                crnn_image_np = np.expand_dims(crnn_image_np,0)
+                ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
+                ch = ch_crnn[0]
+                if ch == '[UNK]':
+                    ch = 'x'
+                else:
+                    find, ch = checkKeyinRegionDictionary(REV_HCLASS_DIC,ch)
+                    if not find :
+                        ch = 'x'
+
+                category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
+                #검시 확률을 업데이트 한다.
+                detections['detection_scores'][index] = probs[0] 
+                print('H지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
+            else :
+                ch = hr_det_fn(hr_det_model,det_image_np)
+                category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
+                twoLinePlate = True
         if category_index[cindex]['name'] == 'vReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
-            ch = vr_det_fn(vr_det_model,det_image_np)
-            category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
+            if REG_CRNN_MODEL_USE :
+                #CRNN 모델을 사용하여 문자를 추출합니다.
+                crnn_image_np = np.swapaxes(det_image_np,0,1)
+                crnn_image_np = np.expand_dims(crnn_image_np,0)
+                ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
+                ch = ch_crnn[0]
+                if ch == '[UNK]':
+                    ch = 'x'
+                else:
+                    find, ch = checkKeyinRegionDictionary(REV_VCLASS_DIC,ch)
+                    if not find :
+                        ch = 'x'
+                category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
+                #검시 확률을 업데이트 한다.
+                detections['detection_scores'][index] = probs[0] 
+                print('V지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
+            else:
+                ch = vr_det_fn(vr_det_model,det_image_np)
+                category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
         if category_index[cindex]['name'] == 'oReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
-            ch = or_det_fn(or_det_model,det_image_np)
-            category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
-            twoLinePlate = True
+            if REG_CRNN_MODEL_USE :
+                #CRNN 모델을 사용하여 문자를 추출합니다.
+                crnn_image_np = np.swapaxes(det_image_np,0,1)
+                crnn_image_np = np.expand_dims(crnn_image_np,0)
+                ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
+                ch = ch_crnn[0]
+                if ch == '[UNK]':
+                    ch = 'x'
+                else:
+                    find, ch = checkKeyinRegionDictionary(REV_OCLASS_DIC,ch)
+                    if not find :
+                        ch = 'x'
+                        
+                category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
+                #검시 확률을 업데이트 한다.
+                detections['detection_scores'][index] = probs[0] 
+                print('O지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
+            else:
+                ch = or_det_fn(or_det_model,det_image_np)
+                category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
+                twoLinePlate = True
     
     plate_str, plateTable, plate2line, platetype_index =  predictPlateNumberODAPI(detections,platetype_index,category_index_temp, CLASS_DIC, twoLinePlate=twoLinePlate)
   

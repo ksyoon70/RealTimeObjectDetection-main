@@ -943,3 +943,32 @@ def makeJson(src_path, image_filename,dst_path, image_shape,category_index, CLAS
     #영상 파일 복사한다.
     if os.path.isfile(src_file) :
         shutil.copyfile(src_file, dst_file)
+        
+#2자리 지역 dictionary key 값이 있는지 확인하다.        
+# dic dictionary 이름
+# kval  조회하려는 key 값
+def checkKeyinRegionDictionary( dic, kval) :
+
+    keyFind  = False
+
+    keylist = [k for k, v in dic.items()]
+    
+    if kval in keylist :
+        keyFind = True
+    else :
+        #['서', '인', '부', '대', '광', '대', '세', '경', '강', '충', '충', '전', '전', '경', '경', '제', '울', 'x']
+        # -1을 하는 것은 x를 빼기 위함이다.
+        keyslist1 = [ key[0] for key in keylist[:-1]]
+        keyslist2 = [ key[1] for key in keylist[:-1]]
+
+        #첫번째에서 찾는다.
+        if kval[0] in keyslist1:
+            ix = keyslist1.index(kval[0])
+            keyFind = True
+            kval = keylist[ix]
+        elif kval[1] in keyslist2:
+            ix = keyslist2.index(kval[1])
+            kval = keylist[ix]
+            keyFind = True
+
+    return keyFind, kval
