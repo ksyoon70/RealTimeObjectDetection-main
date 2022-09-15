@@ -2,6 +2,7 @@ OpBuSan
 OpChungBuk
 OpChungNam
 OpDaeGu
+OpDaeJeon
 OpGangwon
 OpGwangJu
 OpGyeongBuk
@@ -9,5 +10,6 @@ OpGyeongGi
 OpGyeongNam
 OpIncheon
 OpJeonNam
+OpSeJong
 OpSeoul
 OpUlSan

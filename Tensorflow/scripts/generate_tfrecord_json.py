@@ -35,9 +35,9 @@ import numpy as np
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
 usage = 'valid' # train or valid
-dataset_category='tracking'
+dataset_category= 'tracking' #'plateimage'
 label_file = 'label_map.pbtxt'
-fsLabelFileName = "tracking_Label.txt"
+fsLabelFileName = 'tracking_Label.txt'              # tracking시 "tracking_Label.txt"
 #========================
 
 ROOT_DIR = os.path.abspath("../../")

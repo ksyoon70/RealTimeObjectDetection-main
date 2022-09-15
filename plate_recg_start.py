@@ -46,7 +46,7 @@ save_true_recog_image = False          #정인식 영상 저장 여부
 THRESH_HOLD = 0.1
 IS_RESULT_DIR_REMOVE = True #결과 디렉토리 삭제 여부
 MAKE_JSON_FILE  = True                 #json 파일 생성 여부
-REMOVE_SRC_IMAGE = True                #원본영상 삭제여부
+REMOVE_SRC_IMAGE = False                #원본영상 삭제여부
 #========================
 
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
@@ -220,10 +220,13 @@ try:
 
                 plate_new_img_np = cv2.cvtColor(plate_new_img_np, cv2.COLOR_RGB2BGR)
             
+                ix_gt = -1 # 정답 위치
+            
+                gtrue_label = filename.split('_')[ix_gt]
                 
-                gtrue_label = filename.split('_')[-1]
-                gtrue_label = gtrue_label[0:-4]
-                
+                if ix_gt == -1:
+                    gtrue_label = gtrue_label[0:-4]  #왜냐하면 마지막 .jpg를 삭제해야하므로.
+                                
                 if gtrue_label[-1] == 'c':
                     gtrue_label = gtrue_label[0:-1]
                 

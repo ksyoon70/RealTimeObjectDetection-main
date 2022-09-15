@@ -951,13 +951,13 @@ def checkKeyinRegionDictionary( dic, kval) :
 
     keyFind  = False
 
-    keylist = [k for k, v in dic.items()]
-    
-    if kval in keylist :
+    if kval in dic.keys():
         keyFind = True
     else :
         #['서', '인', '부', '대', '광', '대', '세', '경', '강', '충', '충', '전', '전', '경', '경', '제', '울', 'x']
         # -1을 하는 것은 x를 빼기 위함이다.
+        keylist = [k for k, v in dic.items()]
+        
         keyslist1 = [ key[0] for key in keylist[:-1]]
         keyslist2 = [ key[1] for key in keylist[:-1]]
 
@@ -966,9 +966,12 @@ def checkKeyinRegionDictionary( dic, kval) :
             ix = keyslist1.index(kval[0])
             keyFind = True
             kval = keylist[ix]
-        elif kval[1] in keyslist2:
-            ix = keyslist2.index(kval[1])
-            kval = keylist[ix]
-            keyFind = True
+        else:
+            
+            if len(kval) > 1:
+                if kval[1] in keyslist2:
+                    ix = keyslist2.index(kval[1])
+                    kval = keylist[ix]
+                    keyFind = True
 
     return keyFind, kval

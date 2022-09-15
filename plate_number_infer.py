@@ -48,9 +48,9 @@ save_image = True
 save_char = True                # 문자영역을 저장할지 여부
 CHAR_SAVE_FOLDER_NAME = 'char'
 CRNN_MODEL_USE = True           # CRNN 모델을 사용할지 여부
+REG_CRNN_MODEL_USE = True       #지역번판에 CRNN 사용여부
 crnn_categories = []
 crnn_cat_filename = 'chcrnn_categories.txt'
-REG_CRNN_MODEL_USE = True       #지역번판에 CRNN 사용여부
 reg_crnn_categories = []
 reg_crnn_cat_filename = 'regcrnn_categories.txt'
 CHAR_CRNN_MODEL_DIR = 'char_crnn_model'      #CRNN 모델 위치 
@@ -98,10 +98,10 @@ def number_det_init_fn():
     filelist =  os.listdir(os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR))
     
     for fn in filelist :
-        if 'Model' in fn :
+        if 'model' in fn.lower() :
             CHAR_CRNN_MODEL_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,fn)
            
-        if 'weight' in fn:
+        if 'weight' in fn.lower():
             #read weight value from trained dir
             CHAR_CRNN_WEIGHT_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,fn)
             
@@ -146,7 +146,7 @@ def number_det_init_fn():
     if REG_CRNN_MODEL_USE :
         
         for fn in filelist :
-            if 'Model' in fn :
+            if 'model' in fn :
                 REG_CRNN_MODEL_PATH = os.path.join(ROOT_DIR,REG_CRNN_MODEL_DIR,fn)
            
             if 'weight' in fn:
