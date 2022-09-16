@@ -23,6 +23,7 @@ from matplotlib.patches import Polygon
 import matplotlib.image as Image
 
 
+IOU_THESHOLD = 0.3
 # NpEncoder class ================================================================
 class NpEncoder(json.JSONEncoder):
    def default(self, obj):
@@ -143,19 +144,19 @@ twolinePlate = [1,2,4,6,7]  #tyep9는 3자리 번호판
 
 
 def IoU(box1, box2):
-    # box = (x1, y1, x2, y2)
-    box1_area = (box1[2] - box1[0] + 1) * (box1[3] - box1[1] + 1)
-    box2_area = (box2[2] - box2[0] + 1) * (box2[3] - box2[1] + 1)
+    # box = (y1, x1, y2, x2)
+    box1_area = (box1[2] - box1[0]) * (box1[3] - box1[1])
+    box2_area = (box2[2] - box2[0]) * (box2[3] - box2[1])
 
     # obtain x1, y1, x2, y2 of the intersection
-    x1 = max(box1[0], box2[0])
-    y1 = max(box1[1], box2[1])
-    x2 = min(box1[2], box2[2])
-    y2 = min(box1[3], box2[3])
+    x1 = max(box1[1], box2[1])
+    y1 = max(box1[0], box2[0])
+    x2 = min(box1[3], box2[3])
+    y2 = min(box1[2], box2[2])
 
     # compute the width and height of the intersection
-    w = max(0, x2 - x1 + 1)
-    h = max(0, y2 - y1 + 1)
+    w = max(0, x2 - x1 )
+    h = max(0, y2 - y1)
 
     inter = w * h
     iou = inter / (box1_area + box2_area - inter)
@@ -436,6 +437,8 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
     
     objTable = np.array(objTable)
     
+    print('objTable {}'.format(objTable))
+    
     #용도 문자가 중복되는지 확인
     objTable = classIdDoubleCheck(class_id=11,objTable=objTable)
     #지역 문자가 중복되는지 확인
@@ -546,8 +549,8 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                         arr = plateTable[0 : cindex + 1]
                         arr = np.concatenate([arr,res],axis=0)
                         plateTable = arr
-                    if cindex != 0 and  platetype_index != 9:
-                        plateTable = checkTwoNumAhead(rindex=cindex, objTable=plateTable)
+                    #if cindex != 0 and  platetype_index != 9:
+                    #    plateTable = checkTwoNumAhead(rindex=cindex, objTable=plateTable)
         """        
         #숫자가 있을 때 다른 문자 안에 포함되면 삭제한다.
         boxes = plateTable[:,2:]
@@ -570,6 +573,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                 break;
         """        
         #print("plateTable : {0}".format(plateTable))
+        plateTable = rmOverlapBoxs(plateTable=plateTable)
         num_detections = plateTable.shape[0] #갯수가 바뀔수 있다.
         for i in range(0,num_detections) :
             class_index = int(plateTable[i][0])
@@ -585,7 +589,8 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                 oReg = True
     else:   # 예외처리
         plateTable = objTable
-        
+    
+           
     #번호판 타입을 결정한다.
     if not plate2line :
         if vReg == True:
@@ -610,6 +615,40 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
     print("번호판 {} 번호 인식: {}".format('2단' if plate2line == True else '1단',plate_str))
     print('plateTable {}'.format(plateTable))
     return plate_str , plateTable ,  plate2line,  platetype_index      
+
+# plateTabe에서 겹치는 부분은 삭제한다.
+def rmOverlapBoxs(plateTable):
+    #숫자가 있을 때 다른 문자 안에 포함되면 삭제한다.
+    boxes = plateTable[:,2:]
+    scores = plateTable[:,1]
+    #x,y를 바꾼다.
+    #boxes[:,[0,1]] = boxes[:,[1,0]] 
+    #boxes[:,[2,3]] = boxes[:,[3,2]]
+   
+    new_plateTable = np.zeros((1,6))
+    skip = []
+    for i in range(0,len(boxes) - 1):
+        if i in skip:
+            continue
+        box1 = boxes[i]
+        box2 = boxes[i+1]
+        iou,box1_area, box2_area,inter = IoU(box1,box2)
+        if iou < IOU_THESHOLD:
+           new_plateTable =  np.append(new_plateTable,np.expand_dims(plateTable[i],axis=0),axis=0)
+        elif iou >= IOU_THESHOLD:
+            if scores[i] > scores[i+1] :
+                new_plateTable =  np.append(new_plateTable,np.expand_dims(plateTable[i],axis=0),axis=0)
+            else : 
+                new_plateTable =  np.append(new_plateTable,np.expand_dims(plateTable[i+1],axis=0),axis=0)
+            skip.append(i+1)
+
+    lastlow = len(boxes) - 1
+    #마지막 줄은 항상 빠지므로 추가 해 준다.
+    if not lastlow in skip :
+        new_plateTable =  np.append(new_plateTable,np.expand_dims(plateTable[lastlow],axis=0),axis=0)
+    new_plateTable = np.delete(new_plateTable, 0 , axis = 0)
+    return new_plateTable
+    
             
 def imread(filename, flags=cv2.IMREAD_COLOR, dtype=np.uint8):
     try:

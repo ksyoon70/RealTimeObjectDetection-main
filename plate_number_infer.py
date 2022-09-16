@@ -45,9 +45,9 @@ dataset_category='plateimage'
 test_dir_name = 'test'
 show_image = True
 save_image = True
-save_char = True                # 문자영역을 저장할지 여부
+save_char = False                # 문자영역을 저장할지 여부
 CHAR_SAVE_FOLDER_NAME = 'char'
-CRNN_MODEL_USE = True           # CRNN 모델을 사용할지 여부
+CRNN_MODEL_USE = False           # CRNN 모델을 사용할지 여부
 REG_CRNN_MODEL_USE = True       #지역번판에 CRNN 사용여부
 crnn_categories = []
 crnn_cat_filename = 'chcrnn_categories.txt'
@@ -93,22 +93,6 @@ def number_det_init_fn():
     CLASS_DIC = dict(zip(LABEL_FILE_CLASS, LABEL_FILE_HUMAN_NAMES))
     CLASS_DIC['x'] = 'x'
     
-    # crnn_model_name  =  'LSTM_ResNet_epoch_20220912-224908_val_loss_0.2467.h5' 
-    # crnn_weight_name =  'LSTM_ResNet50_20220912-224234_weights_epoch_017_val_loss_0.185.h5'
-    filelist =  os.listdir(os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR))
-    
-    for fn in filelist :
-        if 'model' in fn.lower() :
-            CHAR_CRNN_MODEL_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,fn)
-           
-        if 'weight' in fn.lower():
-            #read weight value from trained dir
-            CHAR_CRNN_WEIGHT_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,fn)
-            
-    filelist =  os.listdir(os.path.join(ROOT_DIR,REG_CRNN_MODEL_DIR))
-    
-    
-    
     global REV_CLASS_DIC
     REV_CLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[11:111],LABEL_FILE_CLASS[11:111]))
     REV_CLASS_DIC['x'] = 'x'
@@ -130,21 +114,34 @@ def number_det_init_fn():
     global crnn_categories
     global reg_crnn_model
     global reg_crnn_categories
-    #용도문자 CRNN 설정
-    CRNN_CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,crnn_cat_filename)
-
-    file = open(CRNN_CATEGORIES_FILE_PATH, "r")
-    while True:
-        line = file.readline()
-        if not line:
-            break
-        crnn_categories.append(line.strip())
-
-    file.close()
-    crnn_model = CRNN_Model(model_path=CHAR_CRNN_MODEL_PATH,weight_path=CHAR_CRNN_WEIGHT_PATH,characters = crnn_categories ,max_length=1)
+    if CRNN_MODEL_USE:
+        #용도문자 CRNN 설정
+        filelist =  os.listdir(os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR))
+        
+        for fn in filelist :
+            if 'model' in fn.lower() :
+                CHAR_CRNN_MODEL_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,fn)
+               
+            if 'weight' in fn.lower():
+                #read weight value from trained dir
+                CHAR_CRNN_WEIGHT_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,fn)
+                
+        
+        
+        CRNN_CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,CHAR_CRNN_MODEL_DIR,crnn_cat_filename)
+    
+        file = open(CRNN_CATEGORIES_FILE_PATH, "r")
+        while True:
+            line = file.readline()
+            if not line:
+                break
+            crnn_categories.append(line.strip())
+    
+        file.close()
+        crnn_model = CRNN_Model(model_path=CHAR_CRNN_MODEL_PATH,weight_path=CHAR_CRNN_WEIGHT_PATH,characters = crnn_categories ,max_length=1)
     #지역 CRNN 설청
     if REG_CRNN_MODEL_USE :
-        
+        filelist =  os.listdir(os.path.join(ROOT_DIR,REG_CRNN_MODEL_DIR))
         for fn in filelist :
             if 'model' in fn :
                 REG_CRNN_MODEL_PATH = os.path.join(ROOT_DIR,REG_CRNN_MODEL_DIR,fn)
