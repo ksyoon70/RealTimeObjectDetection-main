@@ -37,20 +37,28 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'valid' # train or valid
-dataset_category='plateimage'
-label_file = 'label_map.pbtxt'
-fsLabelFileName = "LPR_Labels2.txt"
-filterFileName = "LPR_Filtermap.txt"  #필터 맵 파일이다.
+usage = 'train' # train or valid
+dataset_category='plate' #plateimage
+bFilterMap = None # filter map을 사용하는지 여부
 #========================
 
-ROOT_DIR = os.path.abspath("../../")
+if dataset_category == 'plateimage':
+    label_file = 'char_number_label_map.pbtxt'
+    fsLabelFileName = "LPR_Labels2.txt"
+    filterFileName = "LPR_Filtermap.txt"  #필터 맵 파일이다.
+    bFilterMap = True
+elif dataset_category == 'plate':
+    label_file = 'platelabel_map.pbtxt'
+    fsLabelFileName =  "LPR_Plate_Labels.txt"
+
+ROOT_DIR = os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
+
+#ROOT_DIR = os.path.abspath("../../")
 sys.path.append(ROOT_DIR) 
 
 #레이블을 읽어 들여서 필요한 클래스를 파악한다.
 LABEL_FILE_PATH = os.path.join(ROOT_DIR,fsLabelFileName)
-#필터맵을 통하여 라별 변환할 항목을 읽는다.
-FILTERMAP_FILE_PATH = os.path.join(ROOT_DIR,filterFileName)
+
 
 if  not os.path.exists(LABEL_FILE_PATH):
     print("Label file {0} isn't exists".format(LABEL_FILE_PATH))
@@ -59,15 +67,20 @@ if  not os.path.exists(LABEL_FILE_PATH):
 fLabels = pd.read_csv(LABEL_FILE_PATH, header = None )
 CLASS_NAMES = fLabels[0].values.tolist()
     
-if  not os.path.exists(FILTERMAP_FILE_PATH):
-    print("FilterMap File {0} isn't exists".format(FILTERMAP_FILE_PATH))
-    sys.exit()
+
 
 ConvMap = {}
-cLabels = pd.read_csv(FILTERMAP_FILE_PATH, header = None )
+if bFilterMap :
+    #필터맵을 통하여 라별 변환할 항목을 읽는다.
+    FILTERMAP_FILE_PATH = os.path.join(ROOT_DIR,filterFileName)
+    if  not os.path.exists(FILTERMAP_FILE_PATH):
+        print("FilterMap File {0} isn't exists".format(FILTERMAP_FILE_PATH))
+        sys.exit()
+    
+    cLabels = pd.read_csv(FILTERMAP_FILE_PATH, header = None )
 
-for i, value in enumerate(cLabels[0]):
-    ConvMap[value] = cLabels[1][i]
+    for i, value in enumerate(cLabels[0]):
+        ConvMap[value] = cLabels[1][i]
 
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
 SCRIPTS_PATH = os.path.join(ROOT_DIR,'Tensorflow','scripts')

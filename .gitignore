@@ -50,3 +50,5 @@ vreg_model/
 Tensorflow/workspace/pre-trained-models/
 
 *.pbtxt
+
+char_crnn_model/

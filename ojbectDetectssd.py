@@ -18,18 +18,33 @@ import pandas as pd
 
 #-----------------------------------------------------------------------
 # 사용자가 수정하는 부분이다.
-#여기서 사용할 모델을 고른다.
-#PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
-#PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8'
-PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
+model = 'ssd_640'
+
 
 CUSTOM_MODEL_NAME = 'my_ssd_mobnet' 
 
 fsLabelFileName =  "LPR_Labels2.txt" #"./LPR_Plate_Labels.txt"  #라벨 파일이름
 filterFileName =  'LPR_Filtermap.txt'  #None #"filter.map"  #"LPR_Filtermap.txt"  #필터 맵 파일이다. 사용하지않으면 존재하지 않는 파일명을 넣는다.
-dataset_category='plateimage'
+dataset_category='plate'
+bFilterMap = None               # 필터 사용여부
+BATCH_SIZE = 8
 #-----------------------------------------------------------------------
 
+
+#여기서 사용할 모델을 고른다.
+if model == 'ssd_320':
+    PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
+elif model == 'ssd_640':
+    PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8'
+
+if dataset_category == 'plateimage':
+    fsLabelFileName =  "LPR_Labels2.txt"
+    filterFileName =  'LPR_Filtermap.txt'
+    bFilterMap = True
+elif dataset_category == 'plate':
+    fsLabelFileName =  "LPR_Plate_Labels.txt"
+    bFilterMap = False
+    
 ROOT_DIR = os.getcwd()
 sys.path.append(ROOT_DIR) 
 
@@ -52,33 +67,32 @@ CLASS_NAMES = fLabels[0].values.tolist()
 
 
 #필터맵을 통하여 라별 변환할 항목을 읽는다.
-bFilterMap = False
-if filterFileName :
+
+if bFilterMap :
     FILTERMAP_FILE_PATH = os.path.join(ROOT_DIR,filterFileName)
 
     if  not os.path.exists(FILTERMAP_FILE_PATH):
         print("FilterMap File {0} isn't exists".format(FILTERMAP_FILE_PATH))
-    else :
-        bFilterMap = True
-    
-if bFilterMap :
-    ConvMap = {}
-    cLabels = pd.read_csv(FILTERMAP_FILE_PATH, header = None )
+        sys.exit(0)
+    else:
 
-    for i, value in enumerate(cLabels[0]):
-        ConvMap[value] = cLabels[1][i]
-    
-     #필터에 있는 내용이면 레이블 이름을 변경한다.
-    for index, label in enumerate(CLASS_NAMES) :
+        ConvMap = {}
+        cLabels = pd.read_csv(FILTERMAP_FILE_PATH, header = None )
+
+        for i, value in enumerate(cLabels[0]):
+            ConvMap[value] = cLabels[1][i]
         
-        if label  in ConvMap:
-            CLASS_NAMES[index] = ConvMap[label]
-    
-    new_list = []
-    for v in CLASS_NAMES:
-        if v not in new_list:
-            new_list.append(v)
-    CLASS_NAMES = new_list
+        #필터에 있는 내용이면 레이블 이름을 변경한다.
+        for index, label in enumerate(CLASS_NAMES) :
+            
+            if label  in ConvMap:
+                CLASS_NAMES[index] = ConvMap[label]
+        
+        new_list = []
+        for v in CLASS_NAMES:
+            if v not in new_list:
+                new_list.append(v)
+        CLASS_NAMES = new_list
 
 #라벨 클래스 이름에서 필터에 있는 내용이 있으면 변환한다.
 
@@ -134,7 +148,14 @@ with tf.io.gfile.GFile(CONFIG_PATH, "r") as f:
     
     
 pipeline_config.model.ssd.num_classes = len(CLASS_NAMES)
-pipeline_config.train_config.batch_size = 4
+if model == 'ssd_320':
+    pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.height = 320
+    pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.width = 320
+elif model == 'ssd_640':
+    pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.height = 640
+    pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.width = 640
+
+pipeline_config.train_config.batch_size = BATCH_SIZE
 pipeline_config.train_config.fine_tune_checkpoint = os.path.join(PRETRAINED_MODEL_PATH,PRETRAINED_MODEL_NAME,'checkpoint','ckpt-0')
 pipeline_config.train_config.fine_tune_checkpoint_type = "detection"
 pipeline_config.train_input_reader.label_map_path= os.path.join(ANNOTATION_PATH,'label_map.pbtxt')
