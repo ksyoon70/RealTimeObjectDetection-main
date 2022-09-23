@@ -220,7 +220,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
     category_index_temp = copy.deepcopy(category_index)
     for index, cindex in enumerate(detections['detection_classes']+label_id_offset) :
         if category_index[cindex]['name'] == 'Char' :
-            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
+            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if CRNN_MODEL_USE:
                 #CRNN 모델을 사용하여 문자를 추출합니다.
                 crnn_image_np = np.swapaxes(det_image_np,0,1)
@@ -250,7 +250,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 imwrite( result_save_fullpath_ch, det_image_np)
                 
         if category_index[cindex]['name'] == 'hReg' :
-            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
+            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if REG_CRNN_MODEL_USE :
                 #CRNN 모델을 사용하여 문자를 추출합니다.
                 crnn_image_np = np.swapaxes(det_image_np,0,1)
@@ -273,7 +273,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
                 twoLinePlate = True
         if category_index[cindex]['name'] == 'vReg' :
-            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
+            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if REG_CRNN_MODEL_USE :
                 #CRNN 모델을 사용하여 문자를 추출합니다.
                 crnn_image_np = np.swapaxes(det_image_np,0,1)
@@ -294,7 +294,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 ch = vr_det_fn(vr_det_model,det_image_np)
                 category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
         if category_index[cindex]['name'] == 'oReg' :
-            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,fixratio=False)
+            det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if REG_CRNN_MODEL_USE :
                 #CRNN 모델을 사용하여 문자를 추출합니다.
                 crnn_image_np = np.swapaxes(det_image_np,0,1)

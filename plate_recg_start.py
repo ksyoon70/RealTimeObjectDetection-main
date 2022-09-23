@@ -5,6 +5,7 @@ Created on Mon Feb 21 19:50:19 2022
 @author: headway
 이 파일은 인식 시작을 하는 파일이다. 
 """
+# %%
 import os,sys
 import cv2
 import colorsys
@@ -30,7 +31,6 @@ from plate_hr_infer import *
 from plate_vr_infer import *
 from plate_or_infer import *
 from label_tools import *
-
 #로그에서 warining을 삭제할때 아래 코드를 사용한다.
 import logging
 logging.getLogger('tensorflow').disabled = True
@@ -47,6 +47,8 @@ THRESH_HOLD = 0.1
 IS_RESULT_DIR_REMOVE = True #결과 디렉토리 삭제 여부
 MAKE_JSON_FILE  = True                 #json 파일 생성 여부
 REMOVE_SRC_IMAGE = True                #원본영상 삭제여부
+RESIZE_IMAGE_WIDTH = 640
+RESIZE_IMAGE_HEIGHT = 640
 #========================
 
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
@@ -126,8 +128,7 @@ false_recog_count = 0  #오인식 카운트
 true_recog_count = 0
 start_time = time.time() # strat time
 
-RESIZE_IMAGE_WIDTH = 320
-RESIZE_IMAGE_HEIGHT = 320
+
 
 try:
 
@@ -145,9 +146,11 @@ try:
             src_height, src_width, scr_ch = image_np.shape
 
             src_box = [0,0,1,1]
-            det_image_np = extract_sub_image(image_np,src_box,RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_WIDTH,fixratio=True)
-            #plt.imshow(det_image_np)
-            #plt.show()
+            #pad 가 True이면 영상 아래 위로 black pad가 들어감.
+            InsertPad = False
+            det_image_np = extract_sub_image(image_np,src_box,RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_WIDTH,pad=InsertPad)
+            # plt.imshow(det_image_np)
+            # plt.show()
             input_tensor = tf.convert_to_tensor(np.expand_dims(det_image_np, 0), dtype=tf.float32)
             detections = detect_fn(input_tensor, detection_model)
             
@@ -171,34 +174,37 @@ try:
                 box = list(range(0,4))
                 box = detections['detection_boxes'][0]
                 height, width, ch = image_np.shape
-                # box_sy = int(height*box[0])
-                # box_sx= int(width*box[1])
-                # box_ey = int(height*box[2])
-                # box_ex= int(width*box[3])
-                
-                if src_width >= src_height :
-                    # x 좌표는 그대로 쓴다.
-                    box_sx= int(width*box[1])
-                    box_ex= int(width*box[3])
-                    # y 좌표는 수정한다.
-                    # 상위 black 부분 
-                    up_black = (src_width - src_height)/2.0
-                    box_sy = int(box[0]*src_width - up_black)
-                    box_ey = int(box[2]*src_width - up_black)
-                else :
-                    # y 좌표는 그대로 쓴다.
-                    box_sy= int(width*box[0])
-                    box_ey= int(width*box[2])
-                    # y 좌표는 수정한다.
-                    # 좌측 black 부분 
-                    left_black = (src_height - src_width)/2.0
-                    box_sx = int(box[1]*src_height - left_black)
-                    box_ex = int(box[3]*src_height - left_black)
-                
+                if InsertPad:
+                    if src_width >= src_height :
+                        # x 좌표는 그대로 쓴다.
+                        box_sx= int(width*box[1])
+                        box_ex= int(width*box[3])
+                        # y 좌표는 수정한다.
+                        # 상위 black 부분 
+                        up_black = (src_width - src_height)/2.0
+                        box_sy = int(box[0]*src_width - up_black)
+                        box_ey = int(box[2]*src_width - up_black)
+                    else :
+                        # y 좌표는 그대로 쓴다.
+                        box_sy= int(height*box[0])
+                        box_ey= int(height*box[2])
+                        # y 좌표는 수정한다.
+                        # 좌측 black 부분 
+                        left_black = (src_height - src_width)/2.0
+                        box_sx = int(box[1]*src_height - left_black)
+                        box_ex = int(box[3]*src_height - left_black)
+                else:
+                        # x 좌표는 그대로 쓴다.
+                        box_sx= int(width*box[1])
+                        box_ex= int(width*box[3])
+                        # y 좌표는 그대로 쓴다.
+                        box_sy= int(height*box[0])
+                        box_ey= int(height*box[2])
+
                 plate_np = image_np[box_sy:box_ey,box_sx:box_ex,:]
                 plate_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
-                #plt.imshow(plate_np)
-                #plt.show()
+                # plt.imshow(plate_np)
+                # plt.show()
                 
                 plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB)                
                 #번호판을 320x320 크기로 정규화 한다.
@@ -289,13 +295,4 @@ try:
     print('인식실패: {}'.format(fail_count) +'  ({:.2f})'.format(fail_count*100/total_test_files) + ' %')  
     
 except Exception as e:
-            pass            
-
-        
-        
-            
-
-
-
-
-
+             pass

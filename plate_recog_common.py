@@ -71,7 +71,7 @@ def imwrite(filename, img, params=None):
         print(e)
         return False
     
-# def extract_sub_image(src_np, box, width, height, fixratio=False):
+# def extract_sub_image(src_np, box, width, height, pad=False):
 #     src_height, src_width, ch = src_np.shape
 #     box_sy = int(src_height*box[0])
 #     box_sx= int(src_width*box[1])

@@ -848,7 +848,7 @@ def GetPlateNameFromJson(json_data , enlabel, human_dic ) :
         
         return plate_str 
     
-def extract_sub_image(src_np, box, width, height, fixratio=False):
+def extract_sub_image(src_np, box, width, height, pad=False):
     src_height, src_width, ch = src_np.shape
     box_sy = int(src_height*box[0])
     box_sx= int(src_width*box[1])
@@ -857,7 +857,7 @@ def extract_sub_image(src_np, box, width, height, fixratio=False):
     obj_img = src_np[box_sy:box_ey,box_sx:box_ex,:]
     
     #번호판을 320x320 크기로 정규화 한다.
-    if fixratio :
+    if pad :
         desired_size = max(height,width)
         old_size = [obj_img.shape[1],obj_img.shape[0]]
         ratio = float(desired_size)/max(old_size)
@@ -876,8 +876,8 @@ def extract_sub_image(src_np, box, width, height, fixratio=False):
         desired_size = (height,width)
         #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
         dst_np = cv2.resize(obj_img,desired_size,interpolation=cv2.INTER_LINEAR)
-        plt.imshow(dst_np)
-        plt.show()
+        # plt.imshow(dst_np)
+        # plt.show()
 
     return dst_np
 
