@@ -25,7 +25,7 @@ CUSTOM_MODEL_NAME = 'my_ssd_mobnet'
 
 fsLabelFileName =  "LPR_Labels2.txt" #"./LPR_Plate_Labels.txt"  #라벨 파일이름
 filterFileName =  'LPR_Filtermap.txt'  #None #"filter.map"  #"LPR_Filtermap.txt"  #필터 맵 파일이다. 사용하지않으면 존재하지 않는 파일명을 넣는다.
-dataset_category='plate'
+dataset_category='car-plate'                 #'plate'
 bFilterMap = None               # 필터 사용여부
 BATCH_SIZE = 8
 #-----------------------------------------------------------------------
@@ -43,6 +43,9 @@ if dataset_category == 'plateimage':
     bFilterMap = True
 elif dataset_category == 'plate':
     fsLabelFileName =  "LPR_Plate_Labels.txt"
+    bFilterMap = False
+elif dataset_category == 'car-plate':
+    fsLabelFileName =  "LPR_Car-Plate_Labels.txt"
     bFilterMap = False
     
 ROOT_DIR = os.getcwd()

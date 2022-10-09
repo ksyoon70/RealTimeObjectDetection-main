@@ -30,7 +30,6 @@ OR_WEIGHT_PATH = None #os.path.join(ROOT_DIR,HR_MODEL_DIR,WEIGHT_FILE_NAME)
 CATEGORIES_FILE_NAME = 'oregion_categories.txt'
 CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,OR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
-OR_THRESH_HOLD = 0.9
 #----------------------------
 
 #read model
@@ -62,12 +61,12 @@ def or_det_init_fn():
     return model
 
 
-def or_det_fn(model, img_np) :
+def or_det_fn(model, img_np, or_thresh_hold) :
     img_np = np.expand_dims(img_np,axis=0)
     preds = model.predict(img_np)
     index = np.argmax(preds[0],0)
     predic_label = None
-    if preds[0][index] > OR_THRESH_HOLD :
+    if preds[0][index] > or_thresh_hold :
         predic_label = CLASS_DIC[categories[index]]
         print('predict:{}'.format(predic_label))
     else:

@@ -34,10 +34,14 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'valid' # train or valid
-dataset_category= 'tracking' #'plateimage'
+usage = 'train' # train or valid
+dataset_category = 'car-plate' #'tracking' #'plateimage'
+
 label_file = 'label_map.pbtxt'
-fsLabelFileName = 'tracking_Label.txt'              # tracking시 "tracking_Label.txt"
+if dataset_category == 'car-plate':
+    fsLabelFileName = 'LPR_Car-Plate_Labels.txt' #레이블 이름 설정 
+else :
+    fsLabelFileName = 'tracking_Label.txt'              # tracking시 "tracking_Label.txt"
 #========================
 
 ROOT_DIR = os.path.abspath("../../")
@@ -71,7 +75,7 @@ DEFAULT_OUPUT_PATH = os.path.join(ANNOTATION_PATH, usage + '.record')
 parser = argparse.ArgumentParser(
     description="Sample TensorFlow XML-to-TFRecord converter")
 parser.add_argument("-x",
-                    "--xml_dir",
+                    "--json_dir",
                     help="Path to the folder where the input .xml files are stored.",
                     type=str,default=DEFAULT_ANNOTATION_PATH)
 parser.add_argument("-l",
@@ -94,7 +98,7 @@ parser.add_argument("-c",
 args = parser.parse_args()
 
 if args.image_dir is None:
-    args.image_dir = args.xml_dir
+    args.image_dir = args.json_dir
 
 label_map = label_map_util.load_labelmap(args.labels_path)
 label_map_dict = label_map_util.get_label_map_dict(label_map)
@@ -257,8 +261,7 @@ def main(_):
 
     writer = tf.python_io.TFRecordWriter(args.output_path)
     path = os.path.join(args.image_dir)
-    #examples = xml_to_csv(args.xml_dir)
-    examples = json_to_csv(args.xml_dir)
+    examples = json_to_csv(args.json_dir)
     grouped = split(examples, 'filename')
     for group in grouped:
         tf_example = create_tf_example(group, path)

@@ -9,6 +9,7 @@ OpGyeongBuk
 OpGyeongGi
 OpGyeongNam
 OpIncheon
+OpJeonBuk
 OpJeonNam
 OpSeJong
 OpSeoul

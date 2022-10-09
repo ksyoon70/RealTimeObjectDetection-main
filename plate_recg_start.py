@@ -35,7 +35,6 @@ from label_tools import *
 import logging
 logging.getLogger('tensorflow').disabled = True
 
-
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
 dataset_category='plate'
@@ -46,7 +45,7 @@ save_true_recog_image = False          #정인식 영상 저장 여부
 THRESH_HOLD = 0.1
 IS_RESULT_DIR_REMOVE = True #결과 디렉토리 삭제 여부
 MAKE_JSON_FILE  = True                 #json 파일 생성 여부
-REMOVE_SRC_IMAGE = True                #원본영상 삭제여부
+REMOVE_SRC_IMAGE = False                #원본영상 삭제여부
 RESIZE_IMAGE_WIDTH = 640
 RESIZE_IMAGE_HEIGHT = 640
 #========================
@@ -114,7 +113,11 @@ vr_model = vr_det_init_fn()
 or_model = or_det_init_fn()
 
     
-total_test_files = len(os.listdir(images_dir))
+image_ext = ['jpg','JPG','png','PNG']
+files = [fn for fn in os.listdir(images_dir)
+                  if any(fn.endswith(ext) for ext in image_ext)]
+
+total_test_files = len(files)
 cnt = 0;
 
 models = [ndet_model, char_model, hr_model, vr_model, or_model]
@@ -132,7 +135,7 @@ start_time = time.time() # strat time
 
 try:
 
-    for filename in os.listdir(images_dir):
+    for filename in files:
         cnt += 1
         image_path = os.path.join(images_dir,filename)
         result_path = os.path.join(result_dir,filename)
@@ -256,7 +259,7 @@ try:
                         #오인식인 경우
                         false_recog_count += 1
                         result_file = os.path.join(wrong_recog_dir, basefilename + '_' + plate_str + ext)
-                        shutil.copy(image_path, os.path.join(wrong_recog_dir,os.path.basename(image_path)))
+                        #shutil.copy(image_path, os.path.join(wrong_recog_dir,os.path.basename(image_path))) # 이미지를 저장한다.
                         
                 else :
                     fail_count += 1
@@ -266,7 +269,10 @@ try:
                     imwrite( result_file, plate_new_img_np)
                 else :
                     if not right_recog:    #정인식 영상이 아니면 저장한다.
-                        imwrite( result_file, plate_new_img_np)
+                        #imwrite( result_file, plate_new_img_np) #번호판을 저장한다.
+                        makeJson(src_path=images_dir,image_filename=filename,dst_path=wrong_recog_dir,image_shape=image_np.shape, 
+                             category_index=category_index_temp,CLASS_DIC=CLASS_DIC,plateTable=plateTable,
+                             plateNumber=plate_str,platebox = plate_box ,plateIndex = class_index,plate_shape = plate_new_img_np.shape, xratio=ratio, add_platenum=True)
                         
                 #json 파일을 저장한다. def makeJson(src_path, image_filename,dst_path, image_shape,category_index, CLASS_DIC,plateTable, plateNumber) 
                 if MAKE_JSON_FILE :
@@ -275,7 +281,7 @@ try:
                              plateNumber=plate_str,platebox = plate_box ,plateIndex = class_index,plate_shape = plate_new_img_np.shape, xratio=ratio, add_platenum=True)
                     
                     
-            else :
+            else : # 인식율이 범위 이하여서 영상만 저장한다.
                 fail_count += 1
                 result_file = os.path.join(no_recog_dir, basefilename + ext)
                 shutil.copy(image_path,result_file)

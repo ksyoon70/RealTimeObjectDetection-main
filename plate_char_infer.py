@@ -30,7 +30,6 @@ CWEIGHT_PATH = None
 CATEGORIES_FILE_NAME = 'character_categories.txt'
 CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
-CH_THRESH_HOLD = 0.8
 #----------------------------
 
 #read model
@@ -63,12 +62,12 @@ def char_det_init_fn():
     return model
 
 
-def char_det_fn(model, img_np, predict_anyway = False) :
+def char_det_fn(model, img_np, ch_thresh_hold, predict_anyway = False) :
     img_np = np.expand_dims(img_np,axis=0)
     preds = model.predict(img_np)
     index = np.argmax(preds[0],0)
     predic_label = None
-    if preds[0][index] > CH_THRESH_HOLD :
+    if preds[0][index] > ch_thresh_hold :
         predic_label = CLASS_DIC[categories[index]]
         print('predict:{}'.format(predic_label))
     else:

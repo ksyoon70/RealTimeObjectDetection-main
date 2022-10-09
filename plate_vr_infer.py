@@ -30,7 +30,6 @@ VR_WEIGHT_PATH = None #os.path.join(ROOT_DIR,VR_MODEL_DIR,WEIGHT_FILE_NAME)
 CATEGORIES_FILE_NAME = 'vregion_categories.txt'
 CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,VR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
-VR_THRESH_HOLD = 0.9
 #----------------------------
 
 #read model
@@ -62,12 +61,12 @@ def vr_det_init_fn():
     return model
 
 
-def vr_det_fn(model, img_np) :
+def vr_det_fn(model, img_np, vr_thresh_hold) :
     img_np = np.expand_dims(img_np,axis=0)
     preds = model.predict(img_np)
     index = np.argmax(preds[0],0)
     predic_label = None
-    if preds[0][index] > VR_THRESH_HOLD :
+    if preds[0][index] > vr_thresh_hold :
         predic_label = CLASS_DIC[categories[index]]
         print('predict:{}'.format(predic_label))
     else:

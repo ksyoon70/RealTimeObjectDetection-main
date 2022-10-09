@@ -48,13 +48,17 @@ save_image = True
 save_char = False                # 문자영역을 저장할지 여부
 CHAR_SAVE_FOLDER_NAME = 'char'
 CRNN_MODEL_USE = True           # CRNN 모델을 사용할지 여부
-REG_CRNN_MODEL_USE = False       #지역번판에 CRNN 사용여부
+REG_CRNN_MODEL_USE = True       #지역번판에 CRNN 사용여부
 crnn_categories = []
 crnn_cat_filename = 'chcrnn_categories.txt'
 reg_crnn_categories = []
 reg_crnn_cat_filename = 'regcrnn_categories.txt'
 CHAR_CRNN_MODEL_DIR = 'char_crnn_model'      #CRNN 모델 위치 
 REG_CRNN_MODEL_DIR = 'reg_crnn_model'      #CRNN 모델 위치 
+CH_THRESH_HOLD = 0.7
+HR_THRESH_HOLD = 0.5
+OR_THRESH_HOLD = 0.5
+VR_THRESH_HOLD = 0.5
 #========================
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
 ANNOTATION_PATH = os.path.join(WORKSPACE_PATH,'annotations')
@@ -227,14 +231,14 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
                 ch_crnn, probs = crnn_model.predict(crnn_image_np)
                 ch = ch_crnn[0]
-                if ch == '[UNK]':
+                if ch == '[UNK]' or probs[0] <= CH_THRESH_HOLD:
                     ch = 'x'
                 category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
                 #검시 확률을 업데이트 한다.
                 detections['detection_scores'][index] = probs[0] 
                 print('한글인식 {} 확률 {:.2f}'.format(ch,probs[0]*100))
             else:
-                ch = char_det_fn(cdet_model,det_image_np,predict_anyway=save_char)
+                ch = char_det_fn(cdet_model,det_image_np,ch_thresh_hold=CH_THRESH_HOLD,predict_anyway=save_char)
                 category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
             if save_char:
                 # 문자영상을 저장하고 싶으면 여기서 저장한다.
@@ -257,7 +261,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
                 ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
                 ch = ch_crnn[0]
-                if ch == '[UNK]':
+                if ch == '[UNK]' or probs[0] <= HR_THRESH_HOLD:
                     ch = 'x'
                 else:
                     find, ch = checkKeyinRegionDictionary(REV_HCLASS_DIC,ch)
@@ -269,7 +273,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 detections['detection_scores'][index] = probs[0] 
                 print('H지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
             else :
-                ch = hr_det_fn(hr_det_model,det_image_np)
+                ch = hr_det_fn(hr_det_model,det_image_np,hr_thresh_hold=HR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
                 twoLinePlate = True
         if category_index[cindex]['name'] == 'vReg' :
@@ -280,7 +284,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
                 ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
                 ch = ch_crnn[0]
-                if ch == '[UNK]':
+                if ch == '[UNK]' or probs[0] <= VR_THRESH_HOLD:
                     ch = 'x'
                 else:
                     find, ch = checkKeyinRegionDictionary(REV_VCLASS_DIC,ch)
@@ -291,7 +295,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 detections['detection_scores'][index] = probs[0] 
                 print('V지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
             else:
-                ch = vr_det_fn(vr_det_model,det_image_np)
+                ch = vr_det_fn(vr_det_model,det_image_np, vr_thresh_hold=VR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
         if category_index[cindex]['name'] == 'oReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
@@ -301,7 +305,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
                 ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
                 ch = ch_crnn[0]
-                if ch == '[UNK]':
+                if ch == '[UNK]' or probs[0] <= OR_THRESH_HOLD:
                     ch = 'x'
                 else:
                     find, ch = checkKeyinRegionDictionary(REV_OCLASS_DIC,ch)
@@ -313,7 +317,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 detections['detection_scores'][index] = probs[0] 
                 print('O지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
             else:
-                ch = or_det_fn(or_det_model,det_image_np)
+                ch = or_det_fn(or_det_model,det_image_np, or_thresh_hold=OR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
                 twoLinePlate = True
     

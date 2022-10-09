@@ -1,0 +1,7 @@
+car,승용
+truck,트럭
+bus,버스
+bike,오토바이
+bicycle,자전거
+plate,번호판
+human,사람
