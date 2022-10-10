@@ -297,7 +297,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
             else:
                 ch = vr_det_fn(vr_det_model,det_image_np, vr_thresh_hold=VR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
-        if category_index[cindex]['name'] == 'oReg' :
+        if category_index[cindex]['name'] == 'oReg':
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if REG_CRNN_MODEL_USE :
                 #CRNN 모델을 사용하여 문자를 추출합니다.

@@ -260,19 +260,23 @@ try:
                         false_recog_count += 1
                         result_file = os.path.join(wrong_recog_dir, basefilename + '_' + plate_str + ext)
                         #shutil.copy(image_path, os.path.join(wrong_recog_dir,os.path.basename(image_path))) # 이미지를 저장한다.
+                        makeJson(src_path=images_dir,image_filename=filename,dst_path=wrong_recog_dir,image_shape=image_np.shape, 
+                             category_index=category_index_temp,CLASS_DIC=CLASS_DIC,plateTable=plateTable,
+                             plateNumber=plate_str,platebox = plate_box ,plateIndex = class_index,plate_shape = plate_new_img_np.shape, xratio=ratio, add_platenum=True)
                         
                 else :
                     fail_count += 1
                     result_file = os.path.join(no_recog_dir, basefilename + '_' + plate_str + ext)
+                    makeJson(src_path=images_dir,image_filename=filename,dst_path=no_recog_dir,image_shape=image_np.shape, 
+                         category_index=category_index_temp,CLASS_DIC=CLASS_DIC,plateTable=plateTable,
+                         plateNumber=plate_str,platebox = plate_box ,plateIndex = class_index,plate_shape = plate_new_img_np.shape, xratio=ratio, add_platenum=True)
                 
                 if save_true_recog_image:  #정인식 영상 저장 이면..
                     imwrite( result_file, plate_new_img_np)
-                else :
-                    if not right_recog:    #정인식 영상이 아니면 저장한다.
+                #else :
+                    #if not right_recog:    #정인식 영상이 아니면 저장한다.
                         #imwrite( result_file, plate_new_img_np) #번호판을 저장한다.
-                        makeJson(src_path=images_dir,image_filename=filename,dst_path=wrong_recog_dir,image_shape=image_np.shape, 
-                             category_index=category_index_temp,CLASS_DIC=CLASS_DIC,plateTable=plateTable,
-                             plateNumber=plate_str,platebox = plate_box ,plateIndex = class_index,plate_shape = plate_new_img_np.shape, xratio=ratio, add_platenum=True)
+                        
                         
                 #json 파일을 저장한다. def makeJson(src_path, image_filename,dst_path, image_shape,category_index, CLASS_DIC,plateTable, plateNumber) 
                 if MAKE_JSON_FILE :
