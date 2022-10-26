@@ -1014,3 +1014,44 @@ def checkKeyinRegionDictionary( dic, kval) :
                     keyFind = True
 
     return keyFind, kval
+
+# box1 이 box2 안에 있는지 여부를 첵크함.
+def isInside(box1, box2):
+    #box1 = (y1, x1, y2, x2)
+    #box2 = (y1, x1, y2, x2)
+  
+  # First we make sure we compare things in the right order
+  # You can skip that part if you are sure that in all cases x1 < x2 and y1 < y2
+  b1_xmin = min(box1[1], box1[3])
+  b1_xmax = max(box1[1], box1[3])
+  b1_ymin = min(box1[0], box1[2])
+  b1_ymax = max(box1[0], box1[2])
+  
+  b2_xmin = min(box2[1], box2[3])
+  b2_xmax = max(box2[1], box2[3])
+  b2_ymin = min(box2[0], box2[2])
+  b2_ymax = max(box2[0], box2[2])
+  
+  # Then you perform your checks. From what I understood,
+  # you want the result to be true if any corner of the box1
+  # is inside the box2's bounding box.
+  
+  b1_corners = [
+    (b1_xmin, b1_ymin),
+    (b1_xmin, b1_ymax),
+    (b1_xmax, b1_ymin),
+    (b1_xmax, b1_ymax)]
+
+  status = True
+  for corner in b1_corners:
+    in_range_along_x = corner[0] < b2_xmax and corner[0] > b2_xmin
+    in_range_along_y = corner[1] < b2_ymax and corner[1] > b2_ymin
+    subcheck = in_range_along_x and in_range_along_y
+    if not subcheck:
+        status = False
+        break
+    else :
+        status = status or subcheck
+  
+  # If we get there, then the box1 is not inside that box2
+  return status
