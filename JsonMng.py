@@ -34,15 +34,19 @@ class JsonMng:
     #plate를 추가한다.    
     def addPlate(self,plateTable,category_index,CLASS_DIC,platebox,plateIndex,plate_shape):
         
-        num_detections = plateTable.shape[0]
+        num_detections = len(plateTable)
         shapes = self.json_data['shapes']
         # 번호판 타입을 추가한다.
-        label = 'type{}'.format(plateIndex)
+        platetype = label = 'type{}'.format(plateIndex)
         self.insertlabel_with_xypoints(shapes,platebox[0],platebox[1],label=label)
         for ix in range(0,num_detections) :
             class_index = int(plateTable[ix][0])
-            label = category_index[class_index]['name']
-            str =  CLASS_DIC[label]
+            if platetype == 'type13':
+                label = plateTable[ix][-1]
+                str =  CLASS_DIC[label]
+            else:
+                label = category_index[class_index]['name']
+                str =  CLASS_DIC[label]
             if not str == 'x' :  # x가 나오면 인식한게 아니기 때문.
                 if class_index == 11 :  #용도문자
                     self.json_data['usage'] = str

@@ -21,19 +21,19 @@ import argparse
 from plate_recog_common import *
 
 #----------------------------
-DEFAULT_LABEL_FILE = "./LPR_Labels1.txt"  #라벨 파일이름
-CHAR_MODEL_DIR = 'char_model'
-MODEL_FILE_NAME = None #'character_resnet50_20220820-002035_model_epoch_35_val_acc_0.9025.h5'
-CMODEL_PATH = None
-WEIGHT_FILE_NAME = None #'character_resnet50_20220820-001359_weights_epoch_025_val_acc_0.905.h5'
-CWEIGHT_PATH = None
-CATEGORIES_FILE_NAME = 'character_categories.txt'
-CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,CATEGORIES_FILE_NAME)
+DEFAULT_LABEL_FILE = "./LPR_Labels2.txt"  #라벨 파일이름
+HR_MODEL_DIR = 'm_hreg_model'
+MODEL_FILE_NAME = None #'hregion_resnet50_model_epoch_40_val_acc_0.7578_20220819-102703.h5'
+HR_MODEL_PATH = None #os.path.join(ROOT_DIR,HR_MODEL_DIR,MODEL_FILE_NAME)
+WEIGHT_FILE_NAME = None #'hregion_resnet50_20220819-102532_model_weights_epoch_30_val_acc_0.867.h5'
+HR_WEIGHT_PATH = None #os.path.join(ROOT_DIR,HR_MODEL_DIR,WEIGHT_FILE_NAME)
+CATEGORIES_FILE_NAME = 'hregion_categories.txt'
+CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,CATEGORIES_FILE_NAME)
 categories = []
 #----------------------------
 
 #read model
-def char_det_init_fn():
+def moto_hr_det_init_fn():
     
     fLabels = pd.read_csv(DEFAULT_LABEL_FILE, header = None )
     LABEL_FILE_CLASS = fLabels[0].values.tolist()
@@ -42,19 +42,18 @@ def char_det_init_fn():
     CLASS_DIC = dict(zip(LABEL_FILE_CLASS, LABEL_FILE_HUMAN_NAMES))
     CLASS_DIC['x'] = 'x'
     
-    filelist =  os.listdir(os.path.join(ROOT_DIR,CHAR_MODEL_DIR))
+    filelist =  os.listdir(os.path.join(ROOT_DIR,HR_MODEL_DIR))
 
     for fn in filelist :
         if 'model' in fn :
-            CMODEL_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,fn)
-           
+            HR_MODEL_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,fn)
+
         if 'weight' in fn:
             #read weight value from trained dir
-            CWEIGHT_PATH = os.path.join(ROOT_DIR,CHAR_MODEL_DIR,fn)
-
-    model = load_model(CMODEL_PATH)
-    model.load_weights(CWEIGHT_PATH)
-    
+            HR_WEIGHT_PATH = os.path.join(ROOT_DIR,HR_MODEL_DIR,fn)
+            
+    model = load_model(HR_MODEL_PATH)
+    model.load_weights(HR_WEIGHT_PATH)
     global categories
     catLabels = pd.read_csv(CATEGORIES_FILE_PATH, header = None )
     categories = catLabels[0].values.tolist()
@@ -63,22 +62,17 @@ def char_det_init_fn():
     return model
 
 
-def char_det_fn(model, img_np, ch_thresh_hold, predict_anyway = False) :
+def moto_hr_det_fn(model, img_np, hr_thresh_hold) :
     img_np = np.expand_dims(img_np,axis=0)
     preds = model.predict(img_np)
     index = np.argmax(preds[0],0)
     predic_label = None
-    if preds[0][index] > ch_thresh_hold :
+    if preds[0][index] > hr_thresh_hold :
         predic_label = CLASS_DIC[categories[index]]
         print('predict:{}'.format(predic_label))
     else:
-        if predict_anyway :     #확률에 관계 없이 무조건 인식한 값을 원할 경우
-            predic_label = CLASS_DIC[categories[index]]
-        else :                  # 일반적으로 확률이 낮으면 x 값을 리턴한다.
-            predic_label = 'x'
-        
-        predic_label1 = CLASS_DIC[categories[index]]
-        print('predict ?:{}'.format(predic_label1))
+        predic_label = 'x'
+        print('미인식:{}'.format(predic_label))
         
     print('확률:{}%'.format(preds[0][index]*100 ))
     return  predic_label

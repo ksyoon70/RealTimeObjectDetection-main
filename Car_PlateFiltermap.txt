@@ -1,0 +1,13 @@
+type1,plate
+type2,plate
+type3,plate
+type4,plate
+type5,plate
+type6,plate
+type7,plate
+type8,plate
+type9,plate
+type10,plate
+type11,plate
+type12,plate
+type13,plate

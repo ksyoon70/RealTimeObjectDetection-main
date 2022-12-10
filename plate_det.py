@@ -24,6 +24,7 @@ from matplotlib.patches import Polygon
 import matplotlib.image as Image
 import time
 from plate_number_infer import *
+from moto_plate_number_infer import *
 from plate_recog_common import *
 from plate_char_infer import *
 from plate_hr_infer import *
@@ -35,7 +36,7 @@ import logging
 logging.getLogger('tensorflow').disabled = True
 
 #========================
-dataset_category == 'plate'
+dataset_category = 'plate'
 RESIZE_IMAGE_WIDTH = 640
 RESIZE_IMAGE_HEIGHT = 640
 #========================
@@ -77,13 +78,15 @@ def plate_det_init_fn() :
     return plate_det_model
 
 # 차량 영상과 번호판 영상을 입력 받아 번호인식을 시도한다.
-def plateDetection(models, ncat_index, image_np, category, filename, plate_np = None) :
+# 번호판을 기준으로 글자의 상대좌표를 반환한다.
+def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = None) :
     
     plate_str = None
     plateTable = None
     category_index_temp = None
     CLASS_DIC = None
     class_index = None
+    plate_box = None
     
     result_path = os.path.join(result_dir,filename)
     global plate_det_model
@@ -96,12 +99,11 @@ def plateDetection(models, ncat_index, image_np, category, filename, plate_np = 
         src_box = [0,0,1,1]
         #pad 가 True이면 영상 아래 위로 black pad가 들어감.
         InsertPad = False
-        det_image_np = extract_sub_image(image_np,src_box,RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_WIDTH,pad=InsertPad)
-        # plt.imshow(det_image_np)
-        # plt.show()
-        input_tensor = tf.convert_to_tensor(np.expand_dims(det_image_np, 0), dtype=tf.float32)
-        detections = detect_fn(input_tensor, plate_det_model)
-        
+        #det_image_np = extract_sub_image(image_np,src_box,RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_WIDTH,pad=InsertPad)
+        plt.imshow(image_np)
+        plt.show()
+        input_tensor = tf.convert_to_tensor(np.expand_dims(image_np, 0), dtype=tf.float32)
+        detections = inner_detect_fn(input_tensor, plate_det_model)
         num_detections = int(detections.pop('num_detections'))
         detections = {key: value[0, :num_detections].numpy()
                     for key, value in detections.items()}
@@ -115,7 +117,7 @@ def plateDetection(models, ncat_index, image_np, category, filename, plate_np = 
         
         #인식율이 일정값 이상이면 번호판을 추출한다.
 
-        if detections['detection_scores'][0] > THRESH_HOLD :
+        if detections['detection_scores'][0] > 0.5 : #THRESH_HOLD :
             class_index = detections['detection_classes'][0]+label_id_offset
             #print("'클래스:{0} 번호판 타입 {1} 확률:{2:.3f}".format(class_index,category_index[class_index]['name'],detections['detection_scores'][0]))
             #print('box= {}'.format(detections['detection_boxes'][0]))
@@ -151,8 +153,8 @@ def plateDetection(models, ncat_index, image_np, category, filename, plate_np = 
 
             plate_np = image_np[box_sy:box_ey,box_sx:box_ex,:]
             plate_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
-            # plt.imshow(plate_np)
-            # plt.show()
+            #plt.imshow(plate_np)
+            #plt.show()
             
             plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB)                
             #번호판을 320x320 크기로 정규화 한다.
@@ -170,8 +172,20 @@ def plateDetection(models, ncat_index, image_np, category, filename, plate_np = 
             #320x320영상에 번호판을 붙여 넣는다.
             plate_new_img_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img            
             #번호판에 대하여 문자 및 번호를 인식한다.
-            plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+            if category == 'motorcycle':
+                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = moto_plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+            else:
+                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
             
+            half_dummy_ratio = float(yoff) / desired_size
+            src_ratio = h / desired_size
+            for ix in range(len(plateTable)):
+                plateTable[ix][2] = (plateTable[ix][2] - half_dummy_ratio)/src_ratio
+                plateTable[ix][4] = (plateTable[ix][4] - half_dummy_ratio)/src_ratio
+            
+        else:
+            return plate_str, plateTable,category_index_temp, CLASS_DIC,class_index, plate_box
+    
     elif plate_np is not None:
          #번호판을 320x320 크기로 정규화 한다.
             desired_size = max(RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_HEIGHT)
@@ -190,7 +204,10 @@ def plateDetection(models, ncat_index, image_np, category, filename, plate_np = 
             plate_new_img_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img            
             #번호판에 대하여 문자 및 번호를 인식한다.
             class_index = 1
-            plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+            if category == 'motorcycle':
+                    plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = moto_plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+            else:
+                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
             #plateTable 을 320x320 크기에서 원래 싸이즈로 바꾼다.
             # y 좌표는 pad가 들었 갔으므로 수정한다.
             half_dummy_ratio = float(yoff) / desired_size
@@ -199,6 +216,13 @@ def plateDetection(models, ncat_index, image_np, category, filename, plate_np = 
                 plateTable[ix][2] = (plateTable[ix][2] - half_dummy_ratio)/src_ratio
                 plateTable[ix][4] = (plateTable[ix][4] - half_dummy_ratio)/src_ratio
             
-            
-    return plate_str, plateTable,category_index_temp, CLASS_DIC,class_index
+            #plate_box 는 번호판 박스의 좌표
+    return plate_str, plateTable,category_index_temp, CLASS_DIC,class_index, plate_box
 
+
+def coordinationTrans(sx, sy, box) :
+    
+    arr = np.array(box)
+    newBox = [arr[0] + sx, arr[1] + sy]
+    return newBox
+    

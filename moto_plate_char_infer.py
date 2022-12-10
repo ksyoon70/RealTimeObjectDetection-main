@@ -21,8 +21,8 @@ import argparse
 from plate_recog_common import *
 
 #----------------------------
-DEFAULT_LABEL_FILE = "./LPR_Labels1.txt"  #라벨 파일이름
-CHAR_MODEL_DIR = 'char_model'
+DEFAULT_LABEL_FILE = "./LPR_Labels2.txt"  #라벨 파일이름
+CHAR_MODEL_DIR = 'm_char_model'
 MODEL_FILE_NAME = None #'character_resnet50_20220820-002035_model_epoch_35_val_acc_0.9025.h5'
 CMODEL_PATH = None
 WEIGHT_FILE_NAME = None #'character_resnet50_20220820-001359_weights_epoch_025_val_acc_0.905.h5'
@@ -33,14 +33,13 @@ categories = []
 #----------------------------
 
 #read model
-def char_det_init_fn():
+def moto_char_det_init_fn():
     
     fLabels = pd.read_csv(DEFAULT_LABEL_FILE, header = None )
     LABEL_FILE_CLASS = fLabels[0].values.tolist()
     LABEL_FILE_HUMAN_NAMES = fLabels[1].values.tolist()
     global CLASS_DIC
     CLASS_DIC = dict(zip(LABEL_FILE_CLASS, LABEL_FILE_HUMAN_NAMES))
-    CLASS_DIC['x'] = 'x'
     
     filelist =  os.listdir(os.path.join(ROOT_DIR,CHAR_MODEL_DIR))
 
@@ -63,7 +62,7 @@ def char_det_init_fn():
     return model
 
 
-def char_det_fn(model, img_np, ch_thresh_hold, predict_anyway = False) :
+def moto_char_det_fn(model, img_np, ch_thresh_hold, predict_anyway = False) :
     img_np = np.expand_dims(img_np,axis=0)
     preds = model.predict(img_np)
     index = np.argmax(preds[0],0)

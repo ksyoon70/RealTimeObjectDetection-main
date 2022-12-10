@@ -33,6 +33,8 @@ from plate_or_infer import *
 from label_tools import *
 from plate_det import *
 from JsonMng import *
+from moto_plate_char_infer import *
+from moto_plate_hr_infer import *
 #로그에서 warining을 삭제할때 아래 코드를 사용한다.
 import logging
 logging.getLogger('tensorflow').disabled = True
@@ -99,10 +101,10 @@ if not os.path.isdir(json_dir):
 
 # Load pipeline config and build a detection model
 configs = config_util.get_configs_from_pipeline_file(CONFIG_PATH)
-plate_det_model = model_builder.build(model_config=configs['model'], is_training=False)
+obj_det_model = model_builder.build(model_config=configs['model'], is_training=False)
 
 # Restore checkpoint
-ckpt = tf.compat.v2.train.Checkpoint(model=plate_det_model)
+ckpt = tf.compat.v2.train.Checkpoint(model=obj_det_model)
 #ckpt.restore(os.path.join(CHECKPOINT_PATH, 'ckpt-101')).expect_partial()
 #restore latest checkpoint
 ckpt.restore(tf.train.latest_checkpoint(CHECKPOINT_PATH))
@@ -128,6 +130,11 @@ vr_model = vr_det_init_fn()
 #or 문자모델 초기화
 or_model = or_det_init_fn()
 
+#이륜차 모델 초기화
+moto_ndet_model, moto_ncat_index = moto_number_det_init_fn()      # ncat_index 글자 추출 카테고리 인덱스
+moto_char_model = moto_char_det_init_fn()
+moto_hr_model = moto_hr_det_init_fn()
+
     
 image_ext = ['jpg','JPG','png','PNG']
 files = [fn for fn in os.listdir(images_dir)
@@ -136,7 +143,7 @@ files = [fn for fn in os.listdir(images_dir)
 total_test_files = len(files)
 cnt = 0;
 
-models = [ndet_model, char_model, hr_model, vr_model, or_model]
+models = [ndet_model, char_model, hr_model, vr_model, or_model, moto_ndet_model,moto_char_model, moto_hr_model]
 
 
 print('테스트용 이미지 갯수:',total_test_files)
@@ -164,7 +171,7 @@ try:
             imgRGB  = imread(image_path)
             #imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image_np = np.array(imgRGB)
-            src_height, src_width, scr_ch = image_np.shape
+            height, width, ch = image_np.shape
             jsnonMng = JsonMng(json_dir,image_np.shape,filename)
 
             src_box = [0,0,1,1]
@@ -174,7 +181,7 @@ try:
             #plt.imshow(det_image_np)
             #plt.show()
             input_tensor = tf.convert_to_tensor(np.expand_dims(det_image_np, 0), dtype=tf.float32)
-            detections = detect_fn(input_tensor, plate_det_model)
+            detections = detect_fn(input_tensor, obj_det_model)
             
             num_detections = int(detections.pop('num_detections'))
             detections = {key: value[0, :num_detections].numpy()
@@ -192,38 +199,76 @@ try:
             obj_score = []
             obj_boxes = []
             obj_labels = []
+            helmet_box_list = []
             # 카테고리가 'car-plate'이면 이륜차 검지를 위한 별도의 처리를 한다.
             if dataset_category == 'car-plate' :
                 obj_class = detections['detection_classes']
                 obj_boxes = detections['detection_boxes']
                 obj_score = detections['detection_scores']
                 #번호판만 따로 모은다.
-                plate_info = []
+                plate_info = [] 
+                vehi_box_list = []
                 for index in range(num_detections) :
                     if LABEL_FILE_CLASS[obj_class[index]] == 'plate':
                         pbox = detections['detection_boxes'][index]
                         plate_info.append([pbox,False])
+                    elif LABEL_FILE_CLASS[obj_class[index]] == 'helmet':
+                        category = LABEL_FILE_CLASS[obj_class[index]]
+                        helmet_box_ratio = detections['detection_boxes'][index]
+                        box_sx= int(width*helmet_box_ratio[1])
+                        box_ex= int(width*helmet_box_ratio[3])
+                        # y 좌표는 그대로 쓴다.
+                        box_sy= int(height*helmet_box_ratio[0])
+                        box_ey= int(height*helmet_box_ratio[2])
+                        helmet_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
+                        helmet_box_list.append(helmet_box)  # helmet 리스트에 추가한다.
+                        jsnonMng.addObject(box=helmet_box, label = category)
+                    elif LABEL_FILE_CLASS[obj_class[index]] == 'bicycle':
+                        category = LABEL_FILE_CLASS[obj_class[index]]
+                        bicycle_box_ratio = detections['detection_boxes'][index]
+                        box_sx= int(width*bicycle_box_ratio[1])
+                        box_ex= int(width*bicycle_box_ratio[3])
+                        # y 좌표는 그대로 쓴다.
+                        box_sy= int(height*bicycle_box_ratio[0])
+                        box_ey= int(height*bicycle_box_ratio[2])
+                        bicycle_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
+                        jsnonMng.addObject(box=bicycle_box, label = category)
+
                 
                 for index in range(num_detections) :
-                    if LABEL_FILE_CLASS[obj_class[index]] == 'car' or LABEL_FILE_CLASS[obj_class[index]] == 'truck' or LABEL_FILE_CLASS[obj_class[index]] == 'bus' or LABEL_FILE_CLASS[obj_class[index]] == 'bike' :
+                    if LABEL_FILE_CLASS[obj_class[index]] == 'car' or LABEL_FILE_CLASS[obj_class[index]] == 'truck' or LABEL_FILE_CLASS[obj_class[index]] == 'bus' or LABEL_FILE_CLASS[obj_class[index]] == 'motorcycle' :
                         
                         if detections['detection_scores'][index] > THRESH_HOLD :
                             # 그 영상만 오려낸다.
-                            box = detections['detection_boxes'][index]
-                            height, width, ch = image_np.shape
+                            box = detections['detection_boxes'][index]  # box 0 ~ 1
+                            
                             # x 좌표는 그대로 쓴다.
                             box_sx= int(width*box[1])
                             box_ex= int(width*box[3])
                             # y 좌표는 그대로 쓴다.
                             box_sy= int(height*box[0])
                             box_ey= int(height*box[2])
-                            obj_np = image_np[box_sy:box_ey,box_sx:box_ex,:]
+                            obj_np = image_np[box_sy:box_ey,box_sx:box_ex,:]  #차량영상
                             obj_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
-                            #plt.imshow(obj_np)
-                            #plt.show()
+                            #이전 박스와 겹치는지 확인한다.
+                            checkOberlapped = False
+                            if len(vehi_box_list) :
+                                for vbox in vehi_box_list :
+                                    iou, box1_area, box2_area,inter = IoU([box_sy,box_sx,box_ey,box_ex], vbox)
+                                    if iou > 0.9 :
+                                        checkOberlapped = True
+                                    
+                            if checkOberlapped:
+                                continue;
+                            
+                            vehi_box_list.append([box_sy,box_sx,box_ey,box_ex])
+                            
+                            plt.imshow(obj_np)
+                            plt.show()
                             obj_img = cv2.cvtColor(obj_np, cv2.COLOR_BGR2RGB)
                             category = LABEL_FILE_CLASS[obj_class[index]]
                             jsnonMng.addObject(box=obj_box, label = category)
+                            findPlate = False #번호판을 찾았음을 나타내는 플래그
                             for index, [ pbox, IsUse ] in enumerate(plate_info) :
                                 if not IsUse and isInside( pbox, box ) :  #박스를 사용하지 않았고, 차안에 번호판이 있으면...
                                     pbox_sx= int(width*pbox[1])
@@ -236,12 +281,27 @@ try:
                                     plate_info[index][1] = True  #이 아이템을 사용했음을 표시함.
                                     #plt.imshow(pobj_np)
                                     #plt.show()
-                                    ratios = [float(src_width)/pobj_np.shape[1],float(src_height)/pobj_np.shape[0]]
-                                    plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plateDetection(models, ncat_index, obj_np, category, filename, plate_np = pobj_np)
+                                    ratios = [float(width)/pobj_np.shape[1],float(height)/pobj_np.shape[0]]
+                                    plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,_ = plateDetection(models, ncat_index, obj_np, category, filename, plate_np = pobj_np)
                                     #하나라도 차량에 속하는 번호판을 찾으면 빠져나간다.
-                                    jsnonMng.addPlate(plateTable=plateTable,category_index=category_index_temp,CLASS_DIC=CLASS_DIC,platebox=pobj_box,plateIndex=class_index,plate_shape=pobj_np.shape)
+                                    if plateTable is not None :
+                                        jsnonMng.addPlate(plateTable=plateTable,category_index=category_index_temp,CLASS_DIC=CLASS_DIC,platebox=pobj_box,plateIndex=class_index,plate_shape=pobj_np.shape)
+                                        findPlate = True
                                     break
-                            
+                                
+                            if not findPlate :
+                                #좀 더 범위를 좁혀서 찾아본다.
+                                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,pobj_box_pt = plateDetection(models, ncat_index, obj_np, category, filename, plate_np = None)
+                                
+                                if plateTable is not None :
+                                    pobj_box_pt = coordinationTrans(box_sx,box_sy,pobj_box_pt) #pobj_box는 픽셀 좌표이다.
+                                    pbox_sx= int(pobj_box_pt[0][0])
+                                    pbox_ex= int(pobj_box_pt[0][1])
+                                    # y 좌표는 그대로 쓴다.
+                                    pbox_sy= int(pobj_box_pt[1][0])
+                                    pbox_ey= int(pobj_box_pt[1][2])
+                                    pobj_np = image_np[pbox_sy:pbox_ey,pbox_sx:pbox_ex,:]
+                                    jsnonMng.addPlate(plateTable=plateTable,category_index=category_index_temp,CLASS_DIC=CLASS_DIC,platebox=pobj_box_pt,plateIndex=class_index,plate_shape=pobj_np.shape)
                         else:
                             print('{} : {} is below Threshold{} < {}!'.format(filename,LABEL_FILE_CLASS[obj_class[index]],detections['detection_scores'][index],THRESH_HOLD))
                             continue
@@ -257,9 +317,21 @@ try:
                         pobj_np = image_np[pbox_sy:pbox_ey,pbox_sx:pbox_ex,:]
                         pobj_box = [[pbox_sx, pbox_ex, pbox_ex, pbox_sx],[pbox_sy,pbox_sy,pbox_ey,pbox_ey]]
                         plate_info[index][1] = True  #이 아이템을 사용했음을 표시함.
-                        #plt.imshow(pobj_np)
-                        #plt.show()
-                        plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plateDetection(models, ncat_index, None, 'plate', filename, plate_np = pobj_np)
+                        #오토바이번호판인지 일반 번호판인지 알수 없으므로 일단 헬멧이 있으면 그것 아래에 있는지 확인하고 그러면 이륜차 아니면 일반차 번호판으로 인식을 시도 해본다.
+                        IsMotorsycle = False
+                        
+                        if len(helmet_box_list) > 0 :
+                            for hBox in helmet_box_list :
+                               if isUnderBox(pobj_box , hBox) :
+                                   IsMotorsycle = True
+                                   break;
+                               
+                        if IsMotorsycle:
+                            plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,_ = plateDetection(models, ncat_index, None, 'motorcycle', filename, plate_np = pobj_np)
+                        else:
+                            plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,_ = plateDetection(models, ncat_index, None, 'plate', filename, plate_np = pobj_np)
+                        if plateTable is not None :
+                            jsnonMng.addPlate(plateTable=plateTable,category_index=category_index_temp,CLASS_DIC=CLASS_DIC,platebox=pobj_box,plateIndex=class_index,plate_shape=pobj_np.shape)
                         
                 # 1개 파일에 대한 모든 조회가 끝남.
                 jsnonMng.save()

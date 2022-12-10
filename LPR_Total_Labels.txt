@@ -1,3 +1,17 @@
+BG,
+type1,plate
+type2,plate
+type3,plate
+type4,plate
+type5,plate
+type6,plate
+type7,plate
+type8,plate
+type9,plate
+type10,plate
+type11,plate
+type12,plate
+type13,plate
 n1,1
 n2,2
 n3,3
@@ -86,6 +100,7 @@ Mi,미
 Bi,비
 Si,시
 I,이
+Im,임
 Ji,지
 Chi,치
 Ki,키
@@ -267,3 +282,11 @@ Hong,홍
 Hwa,화
 Hoeng,횡
 Heung,흥
+car,승용
+truck,트럭
+bus,버스
+motorcycle,오토바이
+bicycle,자전거
+plate,번호판
+human,사람
+helmet,헬멧

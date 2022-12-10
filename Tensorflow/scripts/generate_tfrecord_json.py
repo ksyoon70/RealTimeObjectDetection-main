@@ -34,7 +34,7 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'train' # train or valid
+usage = 'valid' # train or valid
 dataset_category = 'car-plate' #'tracking' #'plateimage'
 
 label_file = 'label_map.pbtxt'

@@ -39,6 +39,14 @@ def detect_fn(image, detection_model):
     detections = detection_model.postprocess(prediction_dict, shapes)
     return detections
 
+
+@tf.function
+def inner_detect_fn(image, detection_model):
+    image, shapes = detection_model.preprocess(image)
+    prediction_dict = detection_model.predict(image, shapes)
+    detections = detection_model.postprocess(prediction_dict, shapes)
+    return detections
+
 def drawImage(image_path):
     image  = cv2.imread(image_path)
     imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
