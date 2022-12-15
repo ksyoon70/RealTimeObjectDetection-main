@@ -171,7 +171,7 @@ try:
             #인식율이 일정값 이상이면 번호판을 추출한다.
 
             if detections['detection_scores'][0] > THRESH_HOLD :
-                class_index = detections['detection_classes'][0]+label_id_offset
+                class_index = detections['detection_classes'][0]+label_id_offset            #번호판 타입을 읽음
                 #print("'클래스:{0} 번호판 타입 {1} 확률:{2:.3f}".format(class_index,category_index[class_index]['name'],detections['detection_scores'][0]))
                 #print('box= {}'.format(detections['detection_boxes'][0]))
                 box = list(range(0,4))

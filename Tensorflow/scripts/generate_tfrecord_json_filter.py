@@ -37,8 +37,8 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'valid' # train or valid
-dataset_category='plateimage' #plateimage
+usage = 'train' # train or valid
+dataset_category='mplateimage' #plateimage
 bFilterMap = None # filter map을 사용하는지 여부
 #========================
 
@@ -47,9 +47,15 @@ if dataset_category == 'plateimage':
     fsLabelFileName = "LPR_Labels2.txt"
     filterFileName = "LPR_Filtermap.txt"  #필터 맵 파일이다.
     bFilterMap = True
-elif dataset_category == 'plate':
+elif dataset_category == 'mplateimage':
+    label_file = 'char_number_label_map.pbtxt'
+    fsLabelFileName = "LPR_Labels2.txt"
+    filterFileName = "LPR_Filtermap.txt"  #필터 맵 파일이다.
+    bFilterMap = True    
+elif dataset_category == 'plate':          # 도공 위반촬영장치와 같이 영상에 1개의 차량만 있는 경우에 사용한다. 
     label_file = 'platelabel_map.pbtxt'
     fsLabelFileName =  "LPR_Plate_Labels.txt"
+    bFilterMap = False 
 
 ROOT_DIR = os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
 
@@ -99,9 +105,9 @@ DEFAULT_OUPUT_PATH = os.path.join(ANNOTATION_PATH, usage + '.record')
 
 # Initiate argument parser
 parser = argparse.ArgumentParser(
-    description="Sample TensorFlow XML-to-TFRecord converter")
-parser.add_argument("-x",
-                    "--xml_dir",
+    description="Sample TensorFlow JSON-to-TFRecord converter")
+parser.add_argument("-j",
+                    "--json_dir",
                     help="Path to the folder where the input .xml files are stored.",
                     type=str,default=DEFAULT_ANNOTATION_PATH)
 parser.add_argument("-l",
@@ -124,7 +130,7 @@ parser.add_argument("-c",
 args = parser.parse_args()
 
 if args.image_dir is None:
-    args.image_dir = args.xml_dir
+    args.image_dir = args.json_dir
 
 label_map = label_map_util.load_labelmap(args.labels_path)
 label_map_dict = label_map_util.get_label_map_dict(label_map)
@@ -182,6 +188,7 @@ def json_to_csv(path):
     width = 0
     height = 0
     for filename in glob.glob(path + '/*.json'):
+        print('processing {}...'.format(filename))
         with open(filename, 'r',encoding="UTF-8") as f:
             json_data = json.load(f)
             width = json_data['imageWidth']
@@ -191,7 +198,9 @@ def json_to_csv(path):
                 shape_type = shape['shape_type']
                 label = shape['label']
                 
-                if any(item == label for item in CLASS_NAMES) :
+                if label  in ConvMap:
+                    label = ConvMap[label]
+                if any(item == label for item in CLASS_NAMES):
                     arr =np.array(points)
                     if shape_type == 'polygon':
                         xmin = np.min(arr[:,0])
@@ -225,13 +234,12 @@ def json_to_csv(path):
                         boxes.append(points)
                         
                     #필터에 있는 내용이면 레이블 이름을 변경한다.
-                    if label  in ConvMap:
-                        shape['label'] = ConvMap[label]
+                    shape['label'] = label  #레이블 무조건 업데이트....
                 else:
                     continue
                 value= (json_data['imagePath'],width,height,shape['label'],xmin,ymin,xmax,ymax)
                 json_list.append(value)
-                print(value)
+                #print(value)
     
     column_name = ['filename', 'width', 'height',
                    'class', 'xmin', 'ymin', 'xmax', 'ymax']
@@ -296,8 +304,7 @@ def main(_):
 
     writer = tf.python_io.TFRecordWriter(args.output_path)
     path = os.path.join(args.image_dir)
-    #examples = xml_to_csv(args.xml_dir)
-    examples = json_to_csv(args.xml_dir)
+    examples = json_to_csv(args.json_dir)
     grouped = split(examples, 'filename')
     for group in grouped:
         tf_example = create_tf_example(group, path)

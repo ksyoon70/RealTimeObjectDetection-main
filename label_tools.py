@@ -623,7 +623,8 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
         elif len(plate_str) == 8 and uChar == True:
             platetype_index = 9 # 번호판 글자가 8자이고 용도문자가 있으면 type9(3자리 번호)로 한다.
         elif len(plate_str) == 7 and uChar == True:
-            platetype_index = 8         #7자리 이면 type8로 정한다.
+            if platetype_index != 3:  # 타입이 3이 아니면 8로 한다.
+                platetype_index = 8         #7자리 이면 type8로 정한다.
         else:
             platetype_index = 3
     else :

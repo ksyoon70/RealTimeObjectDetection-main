@@ -3,6 +3,16 @@ truck,트럭
 bus,버스
 motorcycle,오토바이
 bicycle,자전거
-plate,번호판
 human,사람
 helmet,헬멧
+type1,번호판
+type3,번호판
+type4,번호판
+type5,번호판
+type6,번호판
+type7,번호판
+type8,번호판
+type9,번호판
+type11,번호판
+type12,번호판
+type13,번호판

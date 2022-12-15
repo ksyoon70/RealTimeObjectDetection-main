@@ -93,8 +93,8 @@ class JsonMng:
     def save(self):
         
         basefilename, ext = os.path.splitext(self.image_filename) 
-        if basefilename[-1] == 'c':
-            basefilename =  basefilename[:-1]
+        #if basefilename[-1] == 'c':
+        #    basefilename =  basefilename[:-1]
             
         ofilename = os.path.join(self.dst_path,basefilename)
         # json 파일을 저장한다.

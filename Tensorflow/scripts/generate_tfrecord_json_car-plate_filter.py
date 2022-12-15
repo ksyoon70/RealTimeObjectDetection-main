@@ -37,9 +37,9 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'valid' # train or valid
+usage = 'train' # train or valid
 dataset_category='car-plate' #plateimage
-bFilterMap = True # filter map을 사용하는지 여부
+bFilterMap = False # filter map을 사용하는지 여부
 filterFileName = "Car_PlateFiltermap.txt"  #필터 맵 파일이다.
 fsLabelFileName =  "LPR_Car-Plate_Labels.txt"  #레이블 파일이다.
 label_file = 'car-plate_map.pbtxt'
@@ -94,8 +94,8 @@ DEFAULT_OUPUT_PATH = os.path.join(ANNOTATION_PATH, usage + '.record')
 
 # Initiate argument parser
 parser = argparse.ArgumentParser(
-    description="Sample TensorFlow XML-to-TFRecord converter")
-parser.add_argument("-x",
+    description="Sample TensorFlow JSON-to-TFRecord converter")
+parser.add_argument("-j",
                     "--json_dir",
                     help="Path to the folder where the input .xml files are stored.",
                     type=str,default=DEFAULT_ANNOTATION_PATH)
@@ -186,9 +186,9 @@ def json_to_csv(path):
                 points = shape['points']
                 shape_type = shape['shape_type']
                 label = shape['label']
-                
-                if label  in ConvMap:
-                    label = ConvMap[label]
+                if bFilterMap :
+                    if label  in ConvMap:
+                        label = ConvMap[label]
                 if any(item == label for item in CLASS_NAMES):
                     arr =np.array(points)
                     if shape_type == 'polygon':

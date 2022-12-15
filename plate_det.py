@@ -34,6 +34,7 @@ from label_tools import *
 #로그에서 warining을 삭제할때 아래 코드를 사용한다.
 import logging
 logging.getLogger('tensorflow').disabled = True
+import re
 
 #========================
 dataset_category = 'plate'
@@ -79,7 +80,8 @@ def plate_det_init_fn() :
 
 # 차량 영상과 번호판 영상을 입력 받아 번호인식을 시도한다.
 # 번호판을 기준으로 글자의 상대좌표를 반환한다.
-def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = None) :
+# plate_label 은 번호판의 레이블이다. type1 ~ type13
+def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = None, plate_label = None) :
     
     plate_str = None
     plateTable = None
@@ -92,6 +94,8 @@ def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = 
     global plate_det_model
     if plate_det_model is None:
             plate_det_model = plate_det_init_fn()
+            
+    
     
     if image_np is not None and plate_np is None:
         # image_np는 차량영상 이다.
@@ -118,7 +122,7 @@ def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = 
         #인식율이 일정값 이상이면 번호판을 추출한다.
 
         if detections['detection_scores'][0] > 0.5 : #THRESH_HOLD :
-            class_index = detections['detection_classes'][0]+label_id_offset
+            class_index = detections['detection_classes'][0]+label_id_offset #여기에서는 type13이 나오지 않는다 Error --> 추후 수정
             #print("'클래스:{0} 번호판 타입 {1} 확률:{2:.3f}".format(class_index,category_index[class_index]['name'],detections['detection_scores'][0]))
             #print('box= {}'.format(detections['detection_boxes'][0]))
             box = list(range(0,4))
@@ -173,9 +177,9 @@ def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = 
             plate_new_img_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img            
             #번호판에 대하여 문자 및 번호를 인식한다.
             if category == 'motorcycle':
-                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = moto_plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = moto_plate_number_detect_fn(models,plate_new_img_np,ncat_index, platetype_index=class_index,result_path=result_path)
             else:
-                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, platetype_index=class_index,result_path=result_path)
             
             half_dummy_ratio = float(yoff) / desired_size
             src_ratio = h / desired_size
@@ -203,11 +207,18 @@ def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = 
             #320x320영상에 번호판을 붙여 넣는다.
             plate_new_img_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img            
             #번호판에 대하여 문자 및 번호를 인식한다.
-            class_index = 1
-            if category == 'motorcycle':
-                    plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = moto_plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+            if plate_label is not None:
+                if 'type' in plate_label:
+                    class_index = int(re.sub(r'[^0-9]', '', plate_label))
+                else:
+                    class_index = 1
             else:
-                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+                class_index = 1
+            
+            if category == 'motorcycle':
+                    plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = moto_plate_number_detect_fn(models,plate_new_img_np,ncat_index, platetype_index=class_index,result_path=result_path)
+            else:
+                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, platetype_index=class_index,result_path=result_path)
             #plateTable 을 320x320 크기에서 원래 싸이즈로 바꾼다.
             # y 좌표는 pad가 들었 갔으므로 수정한다.
             half_dummy_ratio = float(yoff) / desired_size

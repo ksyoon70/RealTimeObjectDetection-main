@@ -209,9 +209,12 @@ try:
                 plate_info = [] 
                 vehi_box_list = []
                 for index in range(num_detections) :
-                    if LABEL_FILE_CLASS[obj_class[index]] == 'plate':
+                    label = LABEL_FILE_CLASS[obj_class[index]]
+                    #if LABEL_FILE_CLASS[obj_class[index]] == 'plate':
+                    if 'type' in LABEL_FILE_CLASS[obj_class[index]]:  # type1 ~ type13
                         pbox = detections['detection_boxes'][index]
-                        plate_info.append([pbox,False])
+                        
+                        plate_info.append([pbox,False,label])
                     elif LABEL_FILE_CLASS[obj_class[index]] == 'helmet':
                         category = LABEL_FILE_CLASS[obj_class[index]]
                         helmet_box_ratio = detections['detection_boxes'][index]
@@ -269,7 +272,7 @@ try:
                             category = LABEL_FILE_CLASS[obj_class[index]]
                             jsnonMng.addObject(box=obj_box, label = category)
                             findPlate = False #번호판을 찾았음을 나타내는 플래그
-                            for index, [ pbox, IsUse ] in enumerate(plate_info) :
+                            for index, [ pbox, IsUse, label ] in enumerate(plate_info) :
                                 if not IsUse and isInside( pbox, box ) :  #박스를 사용하지 않았고, 차안에 번호판이 있으면...
                                     pbox_sx= int(width*pbox[1])
                                     pbox_ex= int(width*pbox[3])
@@ -282,7 +285,7 @@ try:
                                     #plt.imshow(pobj_np)
                                     #plt.show()
                                     ratios = [float(width)/pobj_np.shape[1],float(height)/pobj_np.shape[0]]
-                                    plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,_ = plateDetection(models, ncat_index, obj_np, category, filename, plate_np = pobj_np)
+                                    plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,_ = plateDetection(models, ncat_index, obj_np, category, filename, plate_np = pobj_np, plate_label = label)
                                     #하나라도 차량에 속하는 번호판을 찾으면 빠져나간다.
                                     if plateTable is not None :
                                         jsnonMng.addPlate(plateTable=plateTable,category_index=category_index_temp,CLASS_DIC=CLASS_DIC,platebox=pobj_box,plateIndex=class_index,plate_shape=pobj_np.shape)
@@ -291,7 +294,7 @@ try:
                                 
                             if not findPlate :
                                 #좀 더 범위를 좁혀서 찾아본다.
-                                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,pobj_box_pt = plateDetection(models, ncat_index, obj_np, category, filename, plate_np = None)
+                                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,pobj_box_pt = plateDetection(models, ncat_index, obj_np, category, filename, plate_np = None, plate_label = None)
                                 
                                 if plateTable is not None :
                                     pobj_box_pt = coordinationTrans(box_sx,box_sy,pobj_box_pt) #pobj_box는 픽셀 좌표이다.
@@ -306,7 +309,7 @@ try:
                             print('{} : {} is below Threshold{} < {}!'.format(filename,LABEL_FILE_CLASS[obj_class[index]],detections['detection_scores'][index],THRESH_HOLD))
                             continue
                         
-                for index, [ pbox, IsUse ] in enumerate(plate_info) :
+                for index, [ pbox, IsUse, label ] in enumerate(plate_info) :
                     if IsUse == False :
                         #아직 차량과 매칭이 안되고 남은 번호판이 있으면...
                         pbox_sx= int(width*pbox[1])
@@ -327,9 +330,10 @@ try:
                                    break;
                                
                         if IsMotorsycle:
-                            plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,_ = plateDetection(models, ncat_index, None, 'motorcycle', filename, plate_np = pobj_np)
+                            #오토바이가 확실하므로 type13을 넣는다.
+                            plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,_ = plateDetection(models, ncat_index, None, 'motorcycle', filename, plate_np = pobj_np, plate_label='type13')
                         else:
-                            plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,_ = plateDetection(models, ncat_index, None, 'plate', filename, plate_np = pobj_np)
+                            plate_str, plateTable,category_index_temp, CLASS_DIC,class_index,_ = plateDetection(models, ncat_index, None, 'plate', filename, plate_np = pobj_np, plate_label = label)
                         if plateTable is not None :
                             jsnonMng.addPlate(plateTable=plateTable,category_index=category_index_temp,CLASS_DIC=CLASS_DIC,platebox=pobj_box,plateIndex=class_index,plate_shape=pobj_np.shape)
                         

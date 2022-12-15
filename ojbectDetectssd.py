@@ -18,7 +18,7 @@ import pandas as pd
 
 #-----------------------------------------------------------------------
 # 사용자가 수정하는 부분이다.
-model = 'ssd_640'
+
 
 
 CUSTOM_MODEL_NAME = 'my_ssd_mobnet' 
@@ -30,23 +30,30 @@ bFilterMap = None               # 필터 사용여부
 BATCH_SIZE = 8
 #-----------------------------------------------------------------------
 
-
+if dataset_category == 'plateimage':
+    fsLabelFileName =  "LPR_Labels2.txt"
+    filterFileName =  'LPR_Filtermap.txt'
+    bFilterMap = True
+    model = 'ssd_320'
+elif dataset_category == 'mplateimage':
+    fsLabelFileName =  "LPR_Labels2.txt"
+    filterFileName =  'LPR_Filtermap.txt'
+    bFilterMap = True
+    model = 'ssd_320'
+elif dataset_category == 'plate':
+    fsLabelFileName =  "LPR_Plate_Labels.txt"
+    bFilterMap = False
+    model = 'ssd_320'
+elif dataset_category == 'car-plate':
+    fsLabelFileName =  "LPR_Car-Plate_Labels.txt"
+    bFilterMap = False
+    model = 'ssd_640'
+    
 #여기서 사용할 모델을 고른다.
 if model == 'ssd_320':
     PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8'
 elif model == 'ssd_640':
     PRETRAINED_MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8'
-
-if dataset_category == 'plateimage':
-    fsLabelFileName =  "LPR_Labels2.txt"
-    filterFileName =  'LPR_Filtermap.txt'
-    bFilterMap = True
-elif dataset_category == 'plate':
-    fsLabelFileName =  "LPR_Plate_Labels.txt"
-    bFilterMap = False
-elif dataset_category == 'car-plate':
-    fsLabelFileName =  "LPR_Car-Plate_Labels.txt"
-    bFilterMap = False
     
 ROOT_DIR = os.getcwd()
 sys.path.append(ROOT_DIR) 
