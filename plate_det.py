@@ -38,8 +38,8 @@ import re
 
 #========================
 dataset_category = 'plate'
-RESIZE_IMAGE_WIDTH = 640
-RESIZE_IMAGE_HEIGHT = 640
+RESIZE_IMAGE_WIDTH = 320
+RESIZE_IMAGE_HEIGHT = 320
 #========================
 
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
@@ -104,8 +104,8 @@ def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = 
         #pad 가 True이면 영상 아래 위로 black pad가 들어감.
         InsertPad = False
         #det_image_np = extract_sub_image(image_np,src_box,RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_WIDTH,pad=InsertPad)
-        plt.imshow(image_np)
-        plt.show()
+        #plt.imshow(image_np)
+        #plt.show()
         input_tensor = tf.convert_to_tensor(np.expand_dims(image_np, 0), dtype=tf.float32)
         detections = inner_detect_fn(input_tensor, plate_det_model)
         num_detections = int(detections.pop('num_detections'))

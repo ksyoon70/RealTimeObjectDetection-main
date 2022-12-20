@@ -454,7 +454,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
         item = [class_id, score, box[0],box[1],box[2],box[3]]
         objTable.append(item)
     
-    objTable = np.array(objTable)
+    objTable =np.round(np.array(objTable).astype(np.float64),4)
     
     print('번호판 글자 검지갯수 {}'.format(num_detections))
 
@@ -664,10 +664,11 @@ def moto_predictPlateNumberODAPI(detect, plate_class_id , category_index, CLASS_
         class_id = detect['detection_classes'][i] + 1
         score = detect['detection_scores'][i]
         ch_class_id = plate_class_id[i]
+        
         item = [class_id, score, box[0],box[1],box[2],box[3], ch_class_id]
         objTable.append(item)
     
-    objTable = np.array(objTable)
+    objTable = np.round(np.array(objTable).astype(np.float64),4)
     
     print('번호판 글자 검지갯수 {}'.format(num_detections))
 
@@ -1241,3 +1242,13 @@ def isUnderBox( box1, box2):
         status = True
         
     return status
+#박스 리스트와의 박스와 box와 겹치는지 여부 첵크
+def overlabCheck(box, vehi_box_list, BOX_OVERLABBED_THRESHOLD = 0.8):
+    checkOberlapped = False
+    if len(vehi_box_list) :
+        for vbox in vehi_box_list :
+            iou, box1_area, box2_area,inter = IoU(box, vbox)
+            if iou > BOX_OVERLABBED_THRESHOLD :
+                checkOberlapped = True
+                
+    return checkOberlapped

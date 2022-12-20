@@ -46,7 +46,7 @@ test_dir_name = 'test'
 show_image = True
 save_image = True
 save_true_recog_image = False          #정인식 영상 저장 여부
-THRESH_HOLD = 0.1
+THRESH_HOLD = 0.5
 IS_RESULT_DIR_REMOVE = True #결과 디렉토리 삭제 여부
 MAKE_JSON_FILE  = True                 #json 파일 생성 여부
 REMOVE_SRC_IMAGE = False                #원본영상 삭제여부
@@ -208,34 +208,36 @@ try:
                 #번호판만 따로 모은다.
                 plate_info = [] 
                 vehi_box_list = []
+                #추후 번호판이나 차량등이 겹치면 삭제해 주어야 한다.
                 for index in range(num_detections) :
-                    label = LABEL_FILE_CLASS[obj_class[index]]
-                    #if LABEL_FILE_CLASS[obj_class[index]] == 'plate':
-                    if 'type' in LABEL_FILE_CLASS[obj_class[index]]:  # type1 ~ type13
-                        pbox = detections['detection_boxes'][index]
-                        
-                        plate_info.append([pbox,False,label])
-                    elif LABEL_FILE_CLASS[obj_class[index]] == 'helmet':
-                        category = LABEL_FILE_CLASS[obj_class[index]]
-                        helmet_box_ratio = detections['detection_boxes'][index]
-                        box_sx= int(width*helmet_box_ratio[1])
-                        box_ex= int(width*helmet_box_ratio[3])
-                        # y 좌표는 그대로 쓴다.
-                        box_sy= int(height*helmet_box_ratio[0])
-                        box_ey= int(height*helmet_box_ratio[2])
-                        helmet_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
-                        helmet_box_list.append(helmet_box)  # helmet 리스트에 추가한다.
-                        jsnonMng.addObject(box=helmet_box, label = category)
-                    elif LABEL_FILE_CLASS[obj_class[index]] == 'bicycle':
-                        category = LABEL_FILE_CLASS[obj_class[index]]
-                        bicycle_box_ratio = detections['detection_boxes'][index]
-                        box_sx= int(width*bicycle_box_ratio[1])
-                        box_ex= int(width*bicycle_box_ratio[3])
-                        # y 좌표는 그대로 쓴다.
-                        box_sy= int(height*bicycle_box_ratio[0])
-                        box_ey= int(height*bicycle_box_ratio[2])
-                        bicycle_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
-                        jsnonMng.addObject(box=bicycle_box, label = category)
+                    if detections['detection_scores'][index] > THRESH_HOLD :
+                        label = LABEL_FILE_CLASS[obj_class[index]]
+                        #if LABEL_FILE_CLASS[obj_class[index]] == 'plate':
+                        if 'type' in LABEL_FILE_CLASS[obj_class[index]]:  # type1 ~ type13
+                            pbox = detections['detection_boxes'][index]
+                            plate_info.append([pbox,False,label])
+                        elif LABEL_FILE_CLASS[obj_class[index]] == 'helmet':
+                            category = LABEL_FILE_CLASS[obj_class[index]]
+                            helmet_box_ratio = detections['detection_boxes'][index]
+                            box_sx= int(width*helmet_box_ratio[1])
+                            box_ex= int(width*helmet_box_ratio[3])
+                            # y 좌표는 그대로 쓴다.
+                            box_sy= int(height*helmet_box_ratio[0])
+                            box_ey= int(height*helmet_box_ratio[2])
+                            helmet_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
+                            helmet_box_list.append(helmet_box)  # helmet 리스트에 추가한다.
+                            jsnonMng.addObject(box=helmet_box, label = category)
+                        elif LABEL_FILE_CLASS[obj_class[index]] == 'bicycle':
+                            category = LABEL_FILE_CLASS[obj_class[index]]
+                            bicycle_box_ratio = detections['detection_boxes'][index]
+                            box_sx= int(width*bicycle_box_ratio[1])
+                            box_ex= int(width*bicycle_box_ratio[3])
+                            # y 좌표는 그대로 쓴다.
+                            box_sy= int(height*bicycle_box_ratio[0])
+                            box_ey= int(height*bicycle_box_ratio[2])
+                            bicycle_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
+                            vehi_box_list.append([box_sy,box_sx,box_ey,box_ex])
+                            jsnonMng.addObject(box=bicycle_box, label = category)
 
                 
                 for index in range(num_detections) :
@@ -254,20 +256,15 @@ try:
                             obj_np = image_np[box_sy:box_ey,box_sx:box_ex,:]  #차량영상
                             obj_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
                             #이전 박스와 겹치는지 확인한다.
-                            checkOberlapped = False
-                            if len(vehi_box_list) :
-                                for vbox in vehi_box_list :
-                                    iou, box1_area, box2_area,inter = IoU([box_sy,box_sx,box_ey,box_ex], vbox)
-                                    if iou > 0.9 :
-                                        checkOberlapped = True
+                            checkOberlapped = overlabCheck([box_sy,box_sx,box_ey,box_ex], vehi_box_list)
                                     
                             if checkOberlapped:
                                 continue;
                             
                             vehi_box_list.append([box_sy,box_sx,box_ey,box_ex])
                             
-                            plt.imshow(obj_np)
-                            plt.show()
+                            #plt.imshow(obj_np)
+                            #plt.show()
                             obj_img = cv2.cvtColor(obj_np, cv2.COLOR_BGR2RGB)
                             category = LABEL_FILE_CLASS[obj_class[index]]
                             jsnonMng.addObject(box=obj_box, label = category)

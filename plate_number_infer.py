@@ -256,13 +256,18 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
         if category_index[cindex]['name'] == 'hReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if REG_CRNN_MODEL_USE :
+                #plt.imshow(det_image_np)
+                #plt.show()
                 #CRNN 모델을 사용하여 문자를 추출합니다.
                 crnn_image_np = np.swapaxes(det_image_np,0,1)
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
                 ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
                 ch = ch_crnn[0]
+                print('H지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
                 if ch == '[UNK]' or probs[0] <= HR_THRESH_HOLD:
-                    ch = 'x'
+                    #ch = 'x'
+                    ch = hr_det_fn(hr_det_model,det_image_np,hr_thresh_hold=HR_THRESH_HOLD)
+                    print('H지역 CNN으로만 다시시도 ....인식내용{}'.format(ch))
                 else:
                     find, ch = checkKeyinRegionDictionary(REV_HCLASS_DIC,ch)
                     if not find :
@@ -271,7 +276,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
                 #검시 확률을 업데이트 한다.
                 detections['detection_scores'][index] = probs[0] 
-                print('H지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
+                
             else :
                 ch = hr_det_fn(hr_det_model,det_image_np,hr_thresh_hold=HR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
@@ -284,8 +289,11 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
                 ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
                 ch = ch_crnn[0]
+                print('V지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
                 if ch == '[UNK]' or probs[0] <= VR_THRESH_HOLD:
-                    ch = 'x'
+                    #ch = 'x'
+                    ch = vr_det_fn(vr_det_model,det_image_np, vr_thresh_hold=VR_THRESH_HOLD)
+                    print('V지역 CNN으로만 다시시도 ....인식내용{}'.format(ch))
                 else:
                     find, ch = checkKeyinRegionDictionary(REV_VCLASS_DIC,ch)
                     if not find :
@@ -293,7 +301,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
                 #검시 확률을 업데이트 한다.
                 detections['detection_scores'][index] = probs[0] 
-                print('V지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
+                
             else:
                 ch = vr_det_fn(vr_det_model,det_image_np, vr_thresh_hold=VR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
@@ -305,8 +313,11 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
                 ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
                 ch = ch_crnn[0]
+                print('O지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
                 if ch == '[UNK]' or probs[0] <= OR_THRESH_HOLD:
-                    ch = 'x'
+                    #ch = 'x'
+                    ch = or_det_fn(or_det_model,det_image_np, or_thresh_hold=OR_THRESH_HOLD)
+                    print('O지역 CNN으로만 다시시도 ....인식내용{}'.format(ch))
                 else:
                     find, ch = checkKeyinRegionDictionary(REV_OCLASS_DIC,ch)
                     if not find :
@@ -315,7 +326,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
                 #검시 확률을 업데이트 한다.
                 detections['detection_scores'][index] = probs[0] 
-                print('O지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
+                
             else:
                 ch = or_det_fn(or_det_model,det_image_np, or_thresh_hold=OR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
