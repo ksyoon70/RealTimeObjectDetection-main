@@ -200,6 +200,7 @@ try:
             obj_boxes = []
             obj_labels = []
             helmet_box_list = []
+            plate_box_list = []
             # 카테고리가 'car-plate'이면 이륜차 검지를 위한 별도의 처리를 한다.
             if dataset_category == 'car-plate' :
                 obj_class = detections['detection_classes']
@@ -215,7 +216,19 @@ try:
                         #if LABEL_FILE_CLASS[obj_class[index]] == 'plate':
                         if 'type' in LABEL_FILE_CLASS[obj_class[index]]:  # type1 ~ type13
                             pbox = detections['detection_boxes'][index]
-                            plate_info.append([pbox,False,label])
+                            
+                            box_sx= int(width*pbox[1])
+                            box_ex= int(width*pbox[3])
+                            # y 좌표는 그대로 쓴다.
+                            box_sy= int(height*pbox[0])
+                            box_ey= int(height*pbox[2])
+                            #이전 박스와 겹치는지 확인한다.
+                            checkOberlapped = overlabCheck([box_sy,box_sx,box_ey,box_ex], plate_box_list)
+                            
+                            if not checkOberlapped:
+                                plate_box_list.append([box_sy,box_sx,box_ey,box_ex])
+                                plate_info.append([pbox,False,label])
+                            
                         elif LABEL_FILE_CLASS[obj_class[index]] == 'helmet':
                             category = LABEL_FILE_CLASS[obj_class[index]]
                             helmet_box_ratio = detections['detection_boxes'][index]
@@ -303,7 +316,7 @@ try:
                                     pobj_np = image_np[pbox_sy:pbox_ey,pbox_sx:pbox_ex,:]
                                     jsnonMng.addPlate(plateTable=plateTable,category_index=category_index_temp,CLASS_DIC=CLASS_DIC,platebox=pobj_box_pt,plateIndex=class_index,plate_shape=pobj_np.shape)
                         else:
-                            print('{} : {} is below Threshold{} < {}!'.format(filename,LABEL_FILE_CLASS[obj_class[index]],detections['detection_scores'][index],THRESH_HOLD))
+                            print('{} : {} is below Threshold {:.3f} < {:.3f} !'.format(filename,LABEL_FILE_CLASS[obj_class[index]],detections['detection_scores'][index],THRESH_HOLD))
                             continue
                         
                 for index, [ pbox, IsUse, label ] in enumerate(plate_info) :

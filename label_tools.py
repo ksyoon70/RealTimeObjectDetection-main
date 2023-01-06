@@ -1250,5 +1250,6 @@ def overlabCheck(box, vehi_box_list, BOX_OVERLABBED_THRESHOLD = 0.8):
             iou, box1_area, box2_area,inter = IoU(box, vbox)
             if iou > BOX_OVERLABBED_THRESHOLD :
                 checkOberlapped = True
+                break
                 
     return checkOberlapped

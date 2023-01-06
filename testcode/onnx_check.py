@@ -31,12 +31,13 @@ def test():
     
 test()
 """
-
+import os
 import onnx 
 from onnx import numpy_helper 
 from onnx import helper
  # Load the ONNX model 
-model = onnx.load("model.onnx") 
+ONNX_MODEL_DIR = 'C:\SPB_Data\RealTimeObjectDetection-main\exported-models\car-plate'
+model = onnx.load(os.path.join(ONNX_MODEL_DIR,"model.onnx")) 
  # Print a human readable representation of the graph 
 print(onnx.helper.printable_graph(model.graph)) 
 # Check the model 

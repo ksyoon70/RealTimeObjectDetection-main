@@ -37,8 +37,8 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'train' # train or valid
-dataset_category='mplateimage' #plateimage
+usage = 'valid' # train or valid
+dataset_category='plate' #plateimage
 bFilterMap = None # filter map을 사용하는지 여부
 #========================
 

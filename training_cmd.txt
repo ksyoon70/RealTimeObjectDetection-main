@@ -118,7 +118,9 @@ debugfile("../models/research/object_detection/model_main_tf2.py", "--model_dir=
 tensorboard --logdir ./Tensorflow/workspace/models/plateimage/my_ssd_mobnet/train
 
 
-trtexec --onnx=model.onnx --saveEngine=model.trt --verbose
+trtexec --onnx=model.onnx --saveEngine=engine.trt --verbose
+
+trtexec --explicitBatch --onnx=model.onnx --saveEngine=model.engine
 
 
 #object detection model 사용시
@@ -132,15 +134,68 @@ python .\tensorflow_object_detection_api\infer.py --engine .\exported-models\my_
 
 
 
+# car-plate tensorflow model 만들기
+python ..\models\research\object_detection\exporter_main_v2.py --input_type float_image_tensor --pipeline_config_path Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\car-plate\my_ssd_mobnet --output_directory .\exported-models\car-plate
+#onnx 만들기
+python .\tensorflow_object_detection_api\create_onnx.py --pipeline_config .\Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --saved_model .\exported-models\car-plate\saved_model --onnx .\exported-models\car-plate\model.onnx
+#tensorrt 만들기
+python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\car-plate\model.onnx --engine .\exported-models\car-plate\engine.trt --precision fp16
+
+
+#plateimage tensorflow model 만들기
+python ..\models\research\object_detection\exporter_main_v2.py --input_type float_image_tensor --pipeline_config_path Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\plateimage\my_ssd_mobnet --output_directory .\exported-models\plateimage
+#onnx 만들기
+python .\tensorflow_object_detection_api\create_onnx.py --pipeline_config .\Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --saved_model .\exported-models\plateimage\saved_model --onnx .\exported-models\plateimage\model.onnx
+#tensorrt 만들기
+python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\plateimage\model.onnx --engine .\exported-models\plateimage\engine.trt --precision fp16
+
+
+
+(object_detection_api) C:\SPB_Data\RealTimeObjectDetection-main>python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\car-plate\model.onnx --engine .\exported-models\car-plate\engine.trt --precision fp16
+[12/27/2022-19:42:04] [TRT] [I] [MemUsageChange] Init CUDA: CPU +396, GPU +0, now: CPU 23868, GPU 1441 (MiB)
+[12/27/2022-19:42:05] [TRT] [I] [MemUsageSnapshot] Begin constructing builder kernel library: CPU 24073 MiB, GPU 1441 MiB
+[12/27/2022-19:42:05] [TRT] [I] [MemUsageSnapshot] End constructing builder kernel library: CPU 24473 MiB, GPU 1563 MiB
+.\tensorflow_object_detection_api\build_engine.py:129: DeprecationWarning: Use set_memory_pool_limit instead.
+  self.config.max_workspace_size = workspace * (2 ** 30)
+[12/27/2022-19:42:05] [TRT] [W] onnx2trt_utils.cpp:365: Your ONNX model has been generated with INT64 weights, while TensorRT does not natively support INT64. Attempting to cast down to INT32.
+[12/27/2022-19:42:05] [TRT] [I] No importer registered for op: EfficientNMS_TRT. Attempting to import as plugin.
+[12/27/2022-19:42:05] [TRT] [I] Searching for plugin: EfficientNMS_TRT, plugin_version: 1, plugin_namespace:
+[12/27/2022-19:42:05] [TRT] [I] Successfully created plugin: EfficientNMS_TRT
+INFO:EngineBuilder:Network Description
+INFO:EngineBuilder:Input 'input_tensor' with shape (1, 640, 640, 3) and dtype DataType.FLOAT
+INFO:EngineBuilder:Output 'num_detections' with shape (1, 1) and dtype DataType.INT32
+INFO:EngineBuilder:Output 'detection_boxes' with shape (1, 10, 4) and dtype DataType.FLOAT
+INFO:EngineBuilder:Output 'detection_scores' with shape (1, 10) and dtype DataType.FLOAT
+INFO:EngineBuilder:Output 'detection_classes' with shape (1, 10) and dtype DataType.INT32
+INFO:EngineBuilder:Building fp16 Engine in C:\SPB_Data\RealTimeObjectDetection-main\exported-models\car-plate\engine.trt
+.\tensorflow_object_detection_api\build_engine.py:222: DeprecationWarning: Use build_serialized_network instead.
+  with self.builder.build_engine(self.network, self.config) as engine, open(engine_path, "wb") as f:
+[12/27/2022-19:42:05] [TRT] [W] TensorRT was linked against cuBLAS/cuBLAS LT 11.8.0 but loaded cuBLAS/cuBLAS LT 11.4.1
+[12/27/2022-19:42:05] [TRT] [I] [MemUsageChange] Init cuBLAS/cuBLASLt: CPU +724, GPU +272, now: CPU 25041, GPU 1835 (MiB)
+[12/27/2022-19:42:06] [TRT] [I] [MemUsageChange] Init cuDNN: CPU +253, GPU +264, now: CPU 25294, GPU 2099 (MiB)
+[12/27/2022-19:42:06] [TRT] [W] TensorRT was linked against cuDNN 8.3.2 but loaded cuDNN 8.1.1
+[12/27/2022-19:42:06] [TRT] [I] Local timing cache in use. Profiling results in this builder pass will not be stored.
+[12/27/2022-19:42:34] [TRT] [I] Some tactics do not have sufficient workspace memory to run. Increasing workspace size will enable more tactics, please check verbose output for requested sizes.
+[12/27/2022-19:43:30] [TRT] [I] Detected 1 inputs and 4 output network tensors.
+[12/27/2022-19:43:30] [TRT] [I] Total Host Persistent Memory: 186144
+[12/27/2022-19:43:30] [TRT] [I] Total Device Persistent Memory: 962048
+[12/27/2022-19:43:30] [TRT] [I] Total Scratch Memory: 122761728
+[12/27/2022-19:43:30] [TRT] [I] [MemUsageStats] Peak memory usage of TRT CPU/GPU memory allocators: CPU 10 MiB, GPU 815 MiB
+[12/27/2022-19:43:30] [TRT] [I] [BlockAssignment] Algorithm ShiftNTopDown took 37.7609ms to assign 12 blocks to 168 nodes requiring 151891456 bytes.
+[12/27/2022-19:43:30] [TRT] [I] Total Activation Memory: 151891456
+[12/27/2022-19:43:30] [TRT] [W] TensorRT was linked against cuBLAS/cuBLAS LT 11.8.0 but loaded cuBLAS/cuBLAS LT 11.4.1
+[12/27/2022-19:43:30] [TRT] [I] [MemUsageChange] Init cuBLAS/cuBLASLt: CPU +0, GPU +8, now: CPU 26115, GPU 2427 (MiB)
+[12/27/2022-19:43:30] [TRT] [I] [MemUsageChange] Init cuDNN: CPU +0, GPU +8, now: CPU 26115, GPU 2435 (MiB)
+[12/27/2022-19:43:30] [TRT] [W] TensorRT was linked against cuDNN 8.3.2 but loaded cuDNN 8.1.1
+[12/27/2022-19:43:30] [TRT] [I] [MemUsageChange] TensorRT-managed allocation in building engine: CPU +6, GPU +12, now: CPU 6, GPU 12 (MiB)
+INFO:EngineBuilder:Serializing engine to file: C:\SPB_Data\RealTimeObjectDetection-main\exported-models\car-plate\engine.trt
+
+
+채널 순서 바꾸기
+
+python .\tensorflow_object_detection_api\create_onnx.py --pipeline_config .\Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --saved_model .\exported-models\plateimage\saved_model --onnx .\exported-models\plateimage\model.onnx -f NCHW
 
 
 
 
-
-
-
-
-
-
-
-
+python create_onnx.py --input_shape '1,320,320,3' --saved_model .\exported-models\plateimage\saved_model --onnx .\exported-models\plateimage\model.onnx
