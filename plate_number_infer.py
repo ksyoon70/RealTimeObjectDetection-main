@@ -232,7 +232,9 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 ch_crnn, probs = crnn_model.predict(crnn_image_np)
                 ch = ch_crnn[0]
                 if ch == '[UNK]' or probs[0] <= CH_THRESH_HOLD:
-                    ch = 'x'
+                    #ch = 'x'
+                    ch = char_det_fn(cdet_model,det_image_np,ch_thresh_hold=CH_THRESH_HOLD,predict_anyway=save_char)
+                    print('용도문자 CNN으로만 다시시도 ....인식내용{}'.format(ch))
                 category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
                 #검시 확률을 업데이트 한다.
                 detections['detection_scores'][index] = probs[0] 

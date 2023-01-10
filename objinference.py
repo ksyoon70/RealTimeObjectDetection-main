@@ -25,7 +25,7 @@ import time
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-dataset_category= 'car-plate' #'car-plate' #'plate' #'tracking'
+dataset_category= 'plate' #'car-plate' #'plate' #'tracking'
 test_dir_name =  'test'
 show_image = True
 save_image = True
@@ -63,7 +63,16 @@ ckpt = tf.compat.v2.train.Checkpoint(model=detection_model)
 #restore latest checkpoint
 ckpt.restore(tf.train.latest_checkpoint(CHECKPOINT_PATH))
 
+LABEL_FILE = None
 
+if dataset_category == 'car-plate':
+    LABEL_FILE = 'car-plate_map.pbtxt'
+elif dataset_category == 'plate':
+    LABEL_FILE = 'platelabel_map.pbtxt'
+elif dataset_category == 'plateimage':
+    LABEL_FILE = 'char_number_label_map.pbtxt'
+else:
+    LABEL_FILE = 'label_map.pbtxt'
 
 @tf.function
 def detect_fn(image):
@@ -73,7 +82,7 @@ def detect_fn(image):
     return detections
 
 
-category_index = label_map_util.create_category_index_from_labelmap(os.path.join(ANNOTATION_PATH, 'label_map.pbtxt'))
+category_index = label_map_util.create_category_index_from_labelmap(os.path.join(ANNOTATION_PATH, LABEL_FILE))
 
 
 def drawImage(image_path):

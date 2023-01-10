@@ -9,6 +9,9 @@ type7,plate
 type8,plate
 type9,plate
 type10,plate
+type11,plate
+type12,plate
+type13,plate
 n1,1
 n2,2
 n3,3
@@ -97,6 +100,7 @@ Mi,미
 Bi,비
 Si,시
 I,이
+Im,임
 Ji,지
 Chi,치
 Ki,키
