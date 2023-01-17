@@ -137,9 +137,17 @@ python .\tensorflow_object_detection_api\infer.py --engine .\exported-models\my_
 # car-plate tensorflow model 만들기
 python ..\models\research\object_detection\exporter_main_v2.py --input_type float_image_tensor --pipeline_config_path Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\car-plate\my_ssd_mobnet --output_directory .\exported-models\car-plate
 #onnx 만들기
-python .\tensorflow_object_detection_api\create_onnx.py --pipeline_config .\Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --saved_model .\exported-models\car-plate\saved_model --onnx .\exported-models\car-plate\model.onnx
+python .\tensorflow_object_detection_api\create_onnx.py --pipeline_config .\Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --saved_model .\exported-models\car-plate\saved_model --onnx .\exported-models\car-plate\model.onnx -f NCHW
 #tensorrt 만들기
 python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\car-plate\model.onnx --engine .\exported-models\car-plate\engine.trt --precision fp16
+
+
+# plate tensorflow model 만들기
+python ..\models\research\object_detection\exporter_main_v2.py --input_type float_image_tensor --pipeline_config_path Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --trained_checkpoint_dir Tensorflow\workspace\models\plate\my_ssd_mobnet --output_directory .\exported-models\plate
+#onnx 만들기
+python .\tensorflow_object_detection_api\create_onnx.py --pipeline_config .\Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --saved_model .\exported-models\plate\saved_model --onnx .\exported-models\plate\model.onnx -f NCHW
+#tensorrt 만들기
+python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\plate\model.onnx --engine .\exported-models\plate\engine.trt --precision fp16
 
 
 #plateimage tensorflow model 만들기

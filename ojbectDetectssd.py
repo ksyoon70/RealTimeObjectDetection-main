@@ -45,7 +45,7 @@ elif dataset_category == 'plate':
     bFilterMap = False
     model = 'ssd_640'
 elif dataset_category == 'car-plate':
-    fsLabelFileName =  "LPR_Car-Plate_Labels.txt"
+    fsLabelFileName =  "LPR_Car-Plate_Labels_2.txt"
     bFilterMap = False
     model = 'ssd_640'
     

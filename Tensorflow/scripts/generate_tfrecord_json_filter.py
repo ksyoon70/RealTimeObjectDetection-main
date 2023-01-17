@@ -37,12 +37,17 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'valid' # train or valid
-dataset_category='plate' #plateimage
+usage = 'train' # train or valid
+dataset_category='car-plate' #plateimage
 bFilterMap = None # filter map을 사용하는지 여부
 #========================
 
-if dataset_category == 'plateimage':
+if dataset_category == 'car-plate':
+    label_file = 'label_map.pbtxt'
+    fsLabelFileName = "LPR_Car-Plate_Labels_2.txt" #변경하고자 하는 레이블 명이다.
+    filterFileName = "Car_PlateFiltermap.txt"  #필터 맵 파일이다.
+    bFilterMap = True
+elif dataset_category == 'plateimage':
     label_file = 'char_number_label_map.pbtxt'
     fsLabelFileName = "LPR_Labels2.txt"
     filterFileName = "LPR_Filtermap.txt"  #필터 맵 파일이다.
@@ -260,8 +265,12 @@ def split(df, group):
 
 
 def create_tf_example(group, path):
-    with tf.gfile.GFile(os.path.join(path, '{}'.format(group.filename)), 'rb') as fid:
-        encoded_jpg = fid.read()
+    try:
+        with tf.gfile.GFile(os.path.join(path, '{}'.format(group.filename)), 'rb') as fid:
+            encoded_jpg = fid.read()
+    except Exception as e:
+            print('{} 읽기 오류'.format(group.filename))
+            return
     encoded_jpg_io = io.BytesIO(encoded_jpg)
     image = Image.open(encoded_jpg_io)
     width, height = image.size
@@ -308,8 +317,9 @@ def main(_):
     grouped = split(examples, 'filename')
     for group in grouped:
         tf_example = create_tf_example(group, path)
-        writer.write(tf_example.SerializeToString())
-    writer.close()
+        if tf_example!= None:
+            writer.write(tf_example.SerializeToString())
+    writer.close()   
     print('Successfully created the TFRecord file: {}'.format(args.output_path))
     if args.csv_path is not None:
         examples.to_csv(args.csv_path, index=None)
