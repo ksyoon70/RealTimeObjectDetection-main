@@ -204,6 +204,19 @@ INFO:EngineBuilder:Serializing engine to file: C:\SPB_Data\RealTimeObjectDetecti
 python .\tensorflow_object_detection_api\create_onnx.py --pipeline_config .\Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --saved_model .\exported-models\plateimage\saved_model --onnx .\exported-models\plateimage\model.onnx -f NCHW
 
 
+문자 onnx 저장
+python -m tf2onnx.convert --saved-model .\exported-models\ch_model\saved_model --opset 13 --output .\exported-models\ch_model\model.onnx --inputs resnet50_input:0[1,224,224,3] --inputs-as-nchw resnet50_input:0
+batch size 에러가 발생함.
+python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\ch_model\model.onnx --engine .\exported-models\ch_model\engine.trt --precision fp16
 
+hr onnx 저장
+python -m tf2onnx.convert --saved-model .\exported-models\hr_model\saved_model --opset 13 --output .\exported-models\hr_model\model.onnx --inputs resnet50_input:0[1,224,224,3] --inputs-as-nchw resnet50_input:0
+python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\hr_model\model.onnx --engine .\exported-models\hr_model\engine.trt --precision fp16
 
-python create_onnx.py --input_shape '1,320,320,3' --saved_model .\exported-models\plateimage\saved_model --onnx .\exported-models\plateimage\model.onnx
+vr onnx 저장
+python -m tf2onnx.convert --saved-model .\exported-models\vr_model\saved_model --opset 13 --output .\exported-models\vr_model\model.onnx --inputs resnet50_input:0[1,224,224,3] --inputs-as-nchw resnet50_input:0
+python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\vr_model\model.onnx --engine .\exported-models\vr_model\engine.trt --precision fp16
+
+or onnx 저장
+python -m tf2onnx.convert --saved-model .\exported-models\or_model\saved_model --opset 13 --output .\exported-models\or_model\model.onnx --inputs resnet50_input:0[1,224,224,3] --inputs-as-nchw resnet50_input:0
+python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\or_model\model.onnx --engine .\exported-models\or_model\engine.trt --precision fp16
