@@ -31,6 +31,7 @@ global REV_OCLASS_DIC
 global REV_CLASS6_DIC
 global LABEL_FILE_CLASS
 THRESH_HOLD = 0.8
+PLATE_THRESH_HOLD = 0.35
 
 @tf.function
 def detect_fn(image, detection_model):

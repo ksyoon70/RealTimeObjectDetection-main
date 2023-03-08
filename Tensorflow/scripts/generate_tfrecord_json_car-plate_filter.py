@@ -37,7 +37,7 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'valid' # train or valid
+usage = 'train' # train or valid
 dataset_category='car-plate' #plateimage
 bFilterMap = False # filter map을 사용하는지 여부
 filterFileName = "Car_PlateFiltermap.txt"  #필터 맵 파일이다.
@@ -178,57 +178,61 @@ def json_to_csv(path):
     height = 0
     for filename in glob.glob(path + '/*.json'):
         print('processing {}...'.format(filename))
-        with open(filename, 'r',encoding="UTF-8") as f:
-            json_data = json.load(f)
-            width = json_data['imageWidth']
-            height = json_data['imageHeight']
-            for item, shape in enumerate(json_data['shapes']):
-                points = shape['points']
-                shape_type = shape['shape_type']
-                label = shape['label']
-                if bFilterMap :
-                    if label  in ConvMap:
-                        label = ConvMap[label]
-                if any(item == label for item in CLASS_NAMES):
-                    arr =np.array(points)
-                    if shape_type == 'polygon':
-                        xmin = np.min(arr[:,0])
-                        ymin = np.min(arr[:,1])
-                        xmax = np.max(arr[:,0])
-                        ymax = np.max(arr[:,1])
-                        coors = [xmin, ymax]
-                        points.insert(1, coors)
-                        coors = [xmax, ymin]
-                        points.insert(3, coors)
-                        boxes.append(points)
-                    elif shape_type == 'rectangle':
-                        xmin = np.min(arr[:,0])
-                        ymin = np.min(arr[:,1])
-                        xmax = np.max(arr[:,0])
-                        ymax = np.max(arr[:,1])
-                        coors = [xmin, ymax]
-                        points.insert(1, coors)
-                        coors = [xmax, ymin]
-                        points.insert(3, coors)
-                        boxes.append(points)
+        try:
+            with open(filename, 'r',encoding="UTF-8") as f:
+                json_data = json.load(f)
+                width = json_data['imageWidth']
+                height = json_data['imageHeight']
+                for item, shape in enumerate(json_data['shapes']):
+                    points = shape['points']
+                    shape_type = shape['shape_type']
+                    label = shape['label']
+                    if bFilterMap :
+                        if label  in ConvMap:
+                            label = ConvMap[label]
+                    if any(item == label for item in CLASS_NAMES):
+                        arr =np.array(points)
+                        if shape_type == 'polygon':
+                            xmin = np.min(arr[:,0])
+                            ymin = np.min(arr[:,1])
+                            xmax = np.max(arr[:,0])
+                            ymax = np.max(arr[:,1])
+                            coors = [xmin, ymax]
+                            points.insert(1, coors)
+                            coors = [xmax, ymin]
+                            points.insert(3, coors)
+                            boxes.append(points)
+                        elif shape_type == 'rectangle':
+                            xmin = np.min(arr[:,0])
+                            ymin = np.min(arr[:,1])
+                            xmax = np.max(arr[:,0])
+                            ymax = np.max(arr[:,1])
+                            coors = [xmin, ymax]
+                            points.insert(1, coors)
+                            coors = [xmax, ymin]
+                            points.insert(3, coors)
+                            boxes.append(points)
+                        else:
+                            xmin = np.min(arr[:,0])
+                            ymin = np.min(arr[:,1])
+                            xmax = np.max(arr[:,0])
+                            ymax = np.max(arr[:,1])
+                            coors = [xmin, ymax]
+                            points.insert(1, coors)
+                            coors = [xmax, ymin]
+                            points.insert(3, coors)
+                            boxes.append(points)
+                            
+                        #필터에 있는 내용이면 레이블 이름을 변경한다.
+                        shape['label'] = label  #레이블 무조건 업데이트....
                     else:
-                        xmin = np.min(arr[:,0])
-                        ymin = np.min(arr[:,1])
-                        xmax = np.max(arr[:,0])
-                        ymax = np.max(arr[:,1])
-                        coors = [xmin, ymax]
-                        points.insert(1, coors)
-                        coors = [xmax, ymin]
-                        points.insert(3, coors)
-                        boxes.append(points)
-                        
-                    #필터에 있는 내용이면 레이블 이름을 변경한다.
-                    shape['label'] = label  #레이블 무조건 업데이트....
-                else:
-                    continue
-                value= (json_data['imagePath'],width,height,shape['label'],xmin,ymin,xmax,ymax)
-                json_list.append(value)
-                #print(value)
+                        continue
+                    value= (json_data['imagePath'],width,height,shape['label'],xmin,ymin,xmax,ymax)
+                    json_list.append(value)
+                    #print(value)
+        except IOError:
+                print("Error!!! when open it : {}".format(filename))
+                continue     
     
     column_name = ['filename', 'width', 'height',
                    'class', 'xmin', 'ymin', 'xmax', 'ymax']

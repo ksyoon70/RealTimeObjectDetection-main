@@ -37,7 +37,7 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'train' # train or valid
+usage = 'valid' # train or valid
 dataset_category='car-plate' #plateimage
 bFilterMap = None # filter map을 사용하는지 여부
 #========================
@@ -192,6 +192,7 @@ def json_to_csv(path):
     boxes =[]
     width = 0
     height = 0
+    
     for filename in glob.glob(path + '/*.json'):
         print('processing {}...'.format(filename))
         with open(filename, 'r',encoding="UTF-8") as f:
@@ -270,6 +271,11 @@ def create_tf_example(group, path):
             encoded_jpg = fid.read()
     except Exception as e:
             print('{} 읽기 오류'.format(group.filename))
+            basefilename, ext = os.path.splitext(group.filename)
+            rmfilepath = os.path.join(path,basefilename+'.json')
+            if os.path.exists(rmfilepath):
+                os.remove(rmfilepath)
+                print('파일 삭제 : {}'.format(basefilename+'.json'))
             return
     encoded_jpg_io = io.BytesIO(encoded_jpg)
     image = Image.open(encoded_jpg_io)

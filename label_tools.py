@@ -24,6 +24,9 @@ import matplotlib.image as Image
 
 
 IOU_THESHOLD = 0.3
+# 파라미터 ================================================================
+NUM_THRESH_HOLD = 0.4
+#================================================================
 # NpEncoder class ================================================================
 class NpEncoder(json.JSONEncoder):
    def default(self, obj):
@@ -446,20 +449,26 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
     num_detections = detect['num_detections']
     plate2line = False
     plateTable = []
-    
+    valid_detections = 0
     for i in range(0,num_detections) :
         box = detect['detection_boxes'][i]
         class_id = detect['detection_classes'][i] + 1
         score = detect['detection_scores'][i]
         item = [class_id, score, box[0],box[1],box[2],box[3]]
-        objTable.append(item)
+        if class_id <= 10 :
+            if score > NUM_THRESH_HOLD :
+                objTable.append(item)
+                valid_detections += 1
+        else :
+            objTable.append(item)
+            valid_detections += 1
     
     objTable =np.round(np.array(objTable).astype(np.float64),4)
     
-    print('번호판 글자 검지갯수 {}'.format(num_detections))
+    print('유효 번호판 글자 검지갯수 {}'.format(valid_detections))
 
     plate_str = "" # 번호판 문자
-    if(num_detections > 1):
+    if(valid_detections > 1):
         
         #용도 문자가 중복되는지 확인
         objTable = classIdDoubleCheck(class_id=11,objTable=objTable)
@@ -523,7 +532,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                     onelineTable = onelineTable[onelineTable[:,-1].argsort()] #onelineTable[:,3].argsort() 순서대로 인덱스를 반환
                     if onelineTable[0,0] == 13:  # hReg 첫글자 가로 지역문자이면...
                         res = onelineTable[1:,:]
-                        if res.shape[1] > 2:
+                        if res.shape[0] > 2:
                             res = res[(-res[:,1]).argsort()[:2]] #스코어 순으로 2개만 추린다.
                             #다시 정렬한다.
                             res = res[res[:,-1].argsort()]
@@ -539,7 +548,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                     if len(result) and len(result[0]) > 0 :  # Char 첫글자 가로 지역문자이면...
                         cindex = result[0][0]
                         res = twolineTalbe[cindex + 1:,:]
-                        if res.shape[1] > 4:
+                        if res.shape[0] > 4:
                             res = res[(-res[:,1]).argsort()[:4]] #스코어 순으로 4개만 추린다.
                             #다시 정렬한다.
                             res = res[res[:,-1].argsort()]
@@ -558,43 +567,42 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
             else:
                     onelineTable = objTable
                     plateTable = onelineTable[onelineTable[:,-1].argsort()]
-                    onelineTalbescore = plateTable[:,0]
-                    result = np.where(onelineTalbescore == 11)
+                    onelineTableclass = plateTable[:,0]
+                    result = np.where(onelineTableclass == 11) #11은 Char
                     #용도문자 이후 오른쪽 숫자가 4개 이상이면 스코어에 따라서 삭제한다.
                     if len(result) and len(result[0]) > 0 :  # Char 첫글자 가로 지역문자이면...
                         cindex = result[0][0]
                         res = plateTable[cindex + 1:,:]
-                        if res.shape[1] > 4:
+                        #shape 오류 수정 23.03.07
+                        if res.shape[0] > 4:
                             res = res[(-res[:,1]).argsort()[:4]] #스코어 순으로 4개만 추린다.
                             #다시 정렬한다.
                             res = res[res[:,-1].argsort()]
                             arr = plateTable[0 : cindex + 1]
                             arr = np.concatenate([arr,res],axis=0)
                             plateTable = arr
-                        #if cindex != 0 and  platetype_index != 9:
-                        #    plateTable = checkTwoNumAhead(rindex=cindex, objTable=plateTable)
-            """        
-            #숫자가 있을 때 다른 문자 안에 포함되면 삭제한다.
-            boxes = plateTable[:,2:]
-            boxes[:,[0,1]] = boxes[:,[1,0]] 
-            boxes[:,[2,3]] = boxes[:,[3,2]] 
-            
-            #print("plateTable : {0}".format(plateTable))
-            
-            isbreak = False
-            for i in range(0,len(boxes) - 1):
-                box1 = boxes[i]
-                for box2 in boxes[i+1 :]:
-                    iou,box1_area, box2_area,inter = IoU(box1,box2)
-                    if iou > 0.05 and box1_area < box2_area :
-                        plateTable = np.delete(plateTable, i, axis=0)
-                        print("box {0} 삭제 ".format(i))
-                        isbreak = True
-                
-                if isbreak :
-                    break;
-            """        
-            #print("plateTable : {0}".format(plateTable))
+                        #왼쪽에 지역이나 숫자가 3개 이상이면 스코어에 따라서 3개만 추린다.
+                        # 왼쪽 3개 이상 삭제 추가 23.03.07
+                        res = plateTable[:cindex,:]
+                        if res.shape[0] > 3:
+                            res = res[(-res[:,1]).argsort()[:3]] #스코어 순으로 3개만 추린다.
+                            #다시 정렬한다.
+                            res = res[res[:,-1].argsort()]
+                            arr = plateTable[cindex :]
+                            arr = np.concatenate([res,arr],axis=0)
+                            plateTable = arr
+                        
+                    #숫자의 갯수를 구한다. 
+                    onelineTableclass = plateTable[:,0]
+                    numberClassList  =  list(filter(lambda x : x <= 10 ,onelineTableclass))
+                    #문자및 지역의 갯수를 구한다.
+                    nonNumberClassList = list(filter(lambda x : x > 10 ,onelineTableclass))
+                    #천번째 자리가 숫자가 아니면...
+                    if len(nonNumberClassList) == 1 and nonNumberClassList[0] > 10 :
+                        if len(numberClassList) == 4 or len(numberClassList) == 6 :
+                            plateTable = plateTable[1:]
+                            
+
             plateTable = rmOverlapBoxs(plateTable=plateTable)
             num_detections = plateTable.shape[0] #갯수가 바뀔수 있다.
             for i in range(0,num_detections) :
@@ -682,29 +690,15 @@ def moto_predictPlateNumberODAPI(detect, plate_class_id , category_index, CLASS_
         plate2line = False
         # 번호판 상하단 구분 위한 코드
         #ref = objTable[:,2].mean(axis = 0)
-        
-        #y 높이 순으로 정렬
-        v_order_arr = objTable[objTable[:,2].argsort()]
+    
         # y 값만 뽑음
-        ycol1 = v_order_arr[:,2]
-        # 한개 차이로 
-        ycol2 = ycol1[1:]
-        ycol2 = np.append(ycol2,ycol2[-1])
-        result = ycol2 - ycol1
-        ref = result.argmax()
-        
-        box_height = v_order_arr[:,4] - v_order_arr[:,2]  # box 놀이를 구한다.
+        ycol = (objTable[:,2] + objTable[:,4])/2
+        xcol =  (objTable[:,3] + objTable[:,5])/2
+  
+        a, b = least_square_line(np.array(xcol),np.array(ycol))
+        y_pre = a*np.array(xcol) + b
 
-        if ref >= 0 and ref < len(result) - 1 :
-            upbox_avr =  Average(box_height[:ref+1])
-            lobox_avr =  Average(box_height[ref+1 :])
-            if result[ref] > upbox_avr/2:
-                plate2line = True
-                print("2line")
-            
-        else:
-            plate2line = False
-            print("1line")
+        plate2line = True
         
         if plate2line :
             # 2line 번호판이면...
@@ -712,8 +706,8 @@ def moto_predictPlateNumberODAPI(detect, plate_class_id , category_index, CLASS_
             onelineTable = []
             twolineTalbe = []
             
-            for index ,type in enumerate(v_order_arr):
-                if index <= ref :
+            for index ,type in enumerate(objTable):
+                if ycol[index] < y_pre[index] :
                     onelineTable.append(list(type))
                 else:
                     twolineTalbe.append(list(type))
@@ -721,6 +715,14 @@ def moto_predictPlateNumberODAPI(detect, plate_class_id , category_index, CLASS_
             twolineTalbe = np.array(twolineTalbe)
             if onelineTable.size :
                 onelineTable = onelineTable[onelineTable[:,-2].argsort()] #onelineTable[:,3].argsort() 순서대로 인덱스를 반환
+                #지역문자가 있는지 보고 그 앞에 있는 것을들 삭제 한다. 23.03.07
+                result = np.where(onelineTable == 13)
+                if len(result) and len(result[0]) > 0 :  # 지역 문자가 있다.
+                    rindex = result[0][0]
+                    res = onelineTable[:rindex,:]
+                    if res.shape[0] > 0:
+                        onelineTable = onelineTable[rindex :]
+                    
                 if onelineTable[0,0] == 13:  # hReg 첫글자 가로 지역문자이면...
                     res = onelineTable[1:,:]
                     if res.shape[0] > 3:
@@ -763,7 +765,7 @@ def moto_predictPlateNumberODAPI(detect, plate_class_id , category_index, CLASS_
                 if len(result) and len(result[0]) > 0 :  # Char 첫글자 가로 지역문자이면...
                     cindex = result[0][0]
                     res = plateTable[cindex + 1:,:]
-                    if res.shape[1] > 4:
+                    if res.shape[0] > 4:
                         res = res[(-res[:,1]).argsort()[:4]] #스코어 순으로 4개만 추린다.
                         #다시 정렬한다.
                         res = res[res[:,-1].argsort()]
@@ -1253,3 +1255,17 @@ def overlabCheck(box, vehi_box_list, BOX_OVERLABBED_THRESHOLD = 0.8):
                 break
                 
     return checkOberlapped
+
+# 최소제곱으로 a, b 구하기
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 데이터
+x = np.array([0.0, 0.1, 0.3, 0.4, 0.5])
+f = np.array([0.5, 1.4, 2.0, 2.5, 3.1])
+
+# 최소제곱으로 a,b 구하기
+def least_square_line(x,f):
+    a = (np.mean(x)*np.mean(f) - np.mean(x*f))/(np.mean(x)*np.mean(x)-np.mean(x*x))
+    b = np.mean(f)-np.mean(x)*a
+    return a,b

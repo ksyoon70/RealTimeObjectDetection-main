@@ -30,6 +30,7 @@ class JsonMng:
         self.json_data['imagePath'] = image_filename
         self.dst_path = dst_path
         self.image_filename = image_filename
+        self.json_filename = None
         
     #plate를 추가한다.    
     def addPlate(self,plateTable,category_index,CLASS_DIC,platebox,plateIndex,plate_shape):
@@ -89,14 +90,24 @@ class JsonMng:
         shapes = self.json_data['shapes']
         self.insertlabel_with_xypoints(shapes,box[0],box[1],label=label)
         self.json_data['shapes'] = shapes
-        
-    def save(self):
+# add_platenum 인식번호를 파일이름에 추가할지 여부
+# plateNumber 인식한 번호이름    
+    def save(self,add_platenum=False, plateNumber=None):
         
         basefilename, ext = os.path.splitext(self.image_filename) 
         #if basefilename[-1] == 'c':
         #    basefilename =  basefilename[:-1]
-            
-        ofilename = os.path.join(self.dst_path,basefilename)
+        if add_platenum and plateNumber:
+            ofilename = os.path.join(self.dst_path,basefilename + '_' + plateNumber)
+            self.json_data['imagePath'] = basefilename + '_' + plateNumber + ext
+            self.json_filename  = basefilename + '_' + plateNumber + '.json'
+        else:
+            ofilename = os.path.join(self.dst_path,basefilename)
+            self.json_filename  = basefilename  + '.json'
         # json 파일을 저장한다.
         with open( ofilename +'.json','w', encoding='utf-8') as f:
                 json.dump(self.json_data,f,ensure_ascii=False,indent="\t" , cls=NpEncoder)
+                
+  #저장한 파일 이름을 반환한다.              
+    def getJsonFilename(self):
+        return self.json_filename

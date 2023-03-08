@@ -121,7 +121,7 @@ def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = 
         
         #인식율이 일정값 이상이면 번호판을 추출한다.
 
-        if detections['detection_scores'][0] > 0.5 : #THRESH_HOLD :
+        if detections['detection_scores'][0] > PLATE_THRESH_HOLD : #THRESH_HOLD :
             class_index = detections['detection_classes'][0]+label_id_offset #여기에서는 type13이 나오지 않는다 Error --> 추후 수정
             #print("'클래스:{0} 번호판 타입 {1} 확률:{2:.3f}".format(class_index,category_index[class_index]['name'],detections['detection_scores'][0]))
             #print('box= {}'.format(detections['detection_boxes'][0]))

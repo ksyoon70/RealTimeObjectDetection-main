@@ -40,7 +40,7 @@ config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 ROOT_DIR = os.getcwd()
 sys.path.append(ROOT_DIR) 
 #----------------------------
-DEFAULT_OBJ_TYPE = 'hr'
+DEFAULT_OBJ_TYPE = 'm_ch'
 SAVE_FOLDER_NAME = 'saved_model'
 #----------------------------
 DEFAULT_MODEL_PATH = None
@@ -66,7 +66,15 @@ elif DEFAULT_OBJ_TYPE == 'hr':
 elif DEFAULT_OBJ_TYPE == 'or':
     DEFAULT_MODEL_DIR = 'oreg_model'
     DEFAULT_SAVE_MODEL_DIR = 'or_model'
-    CATEGORIES_FILE_NAME = 'oregion_categories.txt'    
+    CATEGORIES_FILE_NAME = 'oregion_categories.txt'
+elif DEFAULT_OBJ_TYPE == 'm_ch':
+    DEFAULT_MODEL_DIR = 'm_char_model'
+    DEFAULT_SAVE_MODEL_DIR = 'motor_ch_model'
+    CATEGORIES_FILE_NAME = 'character_categories.txt'     
+elif DEFAULT_OBJ_TYPE == 'm_hr':
+    DEFAULT_MODEL_DIR = 'm_hreg_model'
+    DEFAULT_SAVE_MODEL_DIR = 'motor_hr_model'
+    CATEGORIES_FILE_NAME = 'hregion_categories.txt'
 
 filelist =  os.listdir(os.path.join(ROOT_DIR,DEFAULT_MODEL_DIR))    
 for fn in filelist :

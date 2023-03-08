@@ -48,7 +48,7 @@ import pandas as pd
 # 여기의 내용을 용도에 맞게 수정한다.
 dataset_category='mplateimage'
 test_dir_name = 'test'
-show_image = True
+show_image = False
 save_image = True
 save_char = False                # 문자영역을 저장할지 여부
 CHAR_SAVE_FOLDER_NAME = 'char'
