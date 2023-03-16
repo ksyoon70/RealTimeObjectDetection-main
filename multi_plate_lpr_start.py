@@ -51,7 +51,7 @@ THRESH_HOLD = 0.5
 PLATE_THRESH_HOLD = 0.4             
 IS_RESULT_DIR_REMOVE = True #결과 디렉토리 삭제 여부
 MAKE_JSON_FILE  = True                 #json 파일 생성 여부
-MOVE_SRC_IMAGE = True                #원본 영상 이동 여부
+MOVE_SRC_IMAGE = False                #원본 영상 이동 여부
 RESIZE_IMAGE_WIDTH = 640
 RESIZE_IMAGE_HEIGHT = 640
 DEFAULT_LABEL_FILE = 'LPR_Car-Plate_Labels.txt'
@@ -116,7 +116,7 @@ category_index = label_map_util.create_category_index_from_labelmap(os.path.join
 plate_det_init_fn()
 
 #문자 번호 인식용 모델 load
-ndet_model, ncat_index = number_det_init_fn()      # ncat_index 글자 추출 카테고리 인덱스
+ndet_model, ncat_index = number_det_init_fn()       # ncat_index 글자 추출 카테고리 인덱스
 #ncat_index
 #{1: {'id': 1, 'name': 'n1'}, 2: {'id': 2, 'name': 'n2'}, 3: {'id': 3, 'name': 'n3'}, 4: {'id': 4, 'name': 'n4'}, 5: {'id': 5, 'name': 'n5'}, 6: {'id': 6, 'name': 'n6'}, 7: {'id': 7, 'name': 'n7'}, 8: {'id': 8, 'name': 'n8'}, 9: {'id': 9, 'name': 'n9'}, 10: {'id': 10, 'name': 'n0'}, 11: {'id': 11, 'name': 'Char'}, 12: {'id': 12, 'name': 'vReg'}, 13: {'id': 13, 'name': 'hReg'}, 14: {'id': 14, 'name': 'oReg'}}
 
@@ -176,10 +176,9 @@ try:
         print('Processing {}'.format(filename))
         if os.path.exists(image_path) :
             
-            
-            imgRGB  = imread(image_path)
+            imgBRB  = imread(image_path)
             #imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image_np = np.array(imgRGB)
+            image_np = np.array(imgBRB)
             height, width, ch = image_np.shape
             jsonMng = JsonMng(json_dir,image_np.shape,filename)
 
@@ -301,7 +300,8 @@ try:
                             #if show_image:
                             #    plt.imshow(obj_np)
                             #    plt.show()
-                            obj_img = cv2.cvtColor(obj_np, cv2.COLOR_BGR2RGB)
+                            obj_img = obj_np
+                            #obj_img = cv2.cvtColor(obj_np, cv2.COLOR_BGR2RGB)
                             category = LABEL_FILE_CLASS[obj_class[index]]
                             jsonMng.addObject(box=obj_box, label = category)
                             findPlate = False #번호판을 찾았음을 나타내는 플래그
@@ -444,13 +444,15 @@ try:
                     shutil.copy(image_path,json_image_path)
                 
     
-    end_time = time.time()        
+    end_time = time.time()
+    print("총: {}장".format(total_test_files))        
     print("수행시간: {:.2f}".format(end_time - start_time))
     print("건당 수행시간 : {:.2f}".format((end_time - start_time)/total_test_files))             
     print('인식률: {:}'.format(recog_count) +'  ({:.2f})'.format(recog_count*100/total_test_files) + ' %')
     print('정인식: {:}'.format(true_recog_count) +'  ({:.2f})'.format(true_recog_count*100/recog_count) + ' %')
     print('오인식: {:}'.format(false_recog_count) +'  ({:.2f})'.format(false_recog_count*100/recog_count) + ' %')
     print('인식실패: {}'.format(fail_count) +'  ({:.2f})'.format(fail_count*100/total_test_files) + ' %') 
+    print('정인식율: {}'.format(fail_count) +'  ({:.2f})'.format(true_recog_count*100/total_test_files) + ' %') 
  
     
 except Exception as e:

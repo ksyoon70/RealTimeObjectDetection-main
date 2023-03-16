@@ -155,19 +155,18 @@ def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = 
                     box_sy= int(height*box[0])
                     box_ey= int(height*box[2])
 
-            plate_np = image_np[box_sy:box_ey,box_sx:box_ex,:]
+            plate_img = image_np[box_sy:box_ey,box_sx:box_ex,:]
             plate_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
             #plt.imshow(plate_np)
             #plt.show()
-            
-            plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB)                
+            #plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB)                
             #번호판을 320x320 크기로 정규화 한다.
             desired_size = max(RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_HEIGHT)
             old_size = [plate_img.shape[1],plate_img.shape[0]]
             ratio = float(desired_size)/max(old_size)
             new_size = tuple([int(x*ratio) for x in old_size])
             #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
-            cropped_img = cv2.resize(plate_img,new_size,interpolation=cv2.INTER_AREA)
+            cropped_img = cv2.resize(plate_img,new_size,interpolation=cv2.INTER_LINEAR)
             plate_new_img_np = np.zeros((desired_size, desired_size, 3), dtype = "uint8")
             h = new_size[1]
             w = new_size[0]
@@ -193,12 +192,13 @@ def plateDetection(models, ncat_index, image_np, category, filename ,plate_np = 
     elif plate_np is not None:
          #번호판을 320x320 크기로 정규화 한다.
             desired_size = max(RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_HEIGHT)
-            plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB) 
+            plate_img = plate_np
+            #plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB) 
             old_size = [plate_img.shape[1],plate_img.shape[0]]
             ratio = float(desired_size)/max(old_size)
             new_size = tuple([int(x*ratio) for x in old_size])
             #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
-            cropped_img = cv2.resize(plate_img,new_size,interpolation=cv2.INTER_AREA)
+            cropped_img = cv2.resize(plate_img,new_size,interpolation=cv2.INTER_LINEAR)
             plate_new_img_np = np.zeros((desired_size, desired_size, 3), dtype = "uint8")
             h = new_size[1]
             w = new_size[0]

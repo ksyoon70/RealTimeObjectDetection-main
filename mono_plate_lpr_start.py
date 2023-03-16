@@ -145,9 +145,9 @@ try:
         right_recog = False
         print('Processing {}'.format(filename))
         if os.path.exists(image_path) :
-            imgRGB  = imread(image_path)
+            imgBRG  = imread(image_path)
             #imgRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image_np = np.array(imgRGB)
+            image_np = np.array(imgBRG)
             src_height, src_width, scr_ch = image_np.shape
 
             src_box = [0,0,1,1]
@@ -206,19 +206,19 @@ try:
                         box_sy= int(height*box[0])
                         box_ey= int(height*box[2])
 
-                plate_np = image_np[box_sy:box_ey,box_sx:box_ex,:]
+                plate_img = image_np[box_sy:box_ey,box_sx:box_ex,:]
                 plate_box = [[box_sx, box_ex, box_ex, box_sx],[box_sy,box_sy,box_ey,box_ey]]
                 # plt.imshow(plate_np)
                 # plt.show()
                 
-                plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB)                
+                #plate_img = cv2.cvtColor(plate_np, cv2.COLOR_BGR2RGB)            
                 #번호판을 320x320 크기로 정규화 한다.
                 desired_size = max(RESIZE_IMAGE_WIDTH,RESIZE_IMAGE_HEIGHT)
                 old_size = [plate_img.shape[1],plate_img.shape[0]]
                 ratio = float(desired_size)/max(old_size)
                 new_size = tuple([int(x*ratio) for x in old_size])
                 #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
-                cropped_img = cv2.resize(plate_img,new_size,interpolation=cv2.INTER_AREA)
+                cropped_img = cv2.resize(plate_img,new_size,interpolation=cv2.INTER_LINEAR)
                 plate_new_img_np = np.zeros((desired_size, desired_size, 3), dtype = "uint8")
                 h = new_size[1]
                 w = new_size[0]
@@ -229,7 +229,7 @@ try:
                 #번호판에 대하여 문자 및 번호를 인식한다.
                 plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
 
-                plate_new_img_np = cv2.cvtColor(plate_new_img_np, cv2.COLOR_RGB2BGR)
+                #plate_new_img_np = cv2.cvtColor(plate_new_img_np, cv2.COLOR_RGB2BGR)
             
                 ix_gt = -1 # 정답 위치
             

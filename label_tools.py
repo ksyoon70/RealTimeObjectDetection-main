@@ -848,15 +848,6 @@ def imwrite(filename, img, params=None):
         return False       
             
 def equalizeHist(src) :
-    # src_ycrcb = cv2.cvtColor(src, cv2.COLOR_BGR2YCrCb)
-    # ycrcb_planes = np.asarray(cv2.split(src_ycrcb))
-    
-    
-    # # 밝기 성분에 대해서만 히스토그램 평활화 수행
-    # ycrcb_planes[0] = cv2.equalizeHist(ycrcb_planes[0])
-    
-    # dst_ycrcb = cv2.merge(ycrcb_planes)
-    # dst = cv2.cvtColor(dst_ycrcb, cv2.COLOR_YCrCb2BGR)
     img_yuv = cv2.cvtColor(src, cv2.COLOR_BGR2YUV)
     img_clahe = img_yuv.copy()
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8)) #CLAHE 생성
@@ -1038,7 +1029,6 @@ def extract_sub_image(src_np, box, width, height, pad=False):
         #원영상에서 ratio 만큼 곱하여 리싸이즈한 번호판 영상을 얻는다.
         cropped_img = cv2.resize(obj_img,new_size,interpolation=cv2.INTER_LINEAR)
         dst_np = np.zeros((desired_size, desired_size, 3), dtype = "uint8")
-        #dst_np = cv2.cvtColor(dst_np, cv2.COLOR_BGR2RGB)
         h = new_size[1]
         w = new_size[0]
         yoff = round((desired_size-h)/2)

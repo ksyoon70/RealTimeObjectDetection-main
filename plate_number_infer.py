@@ -48,7 +48,7 @@ save_image = True
 save_char = False                # 문자영역을 저장할지 여부
 CHAR_SAVE_FOLDER_NAME = 'char'
 CRNN_MODEL_USE = True           # CRNN 모델을 사용할지 여부
-REG_CRNN_MODEL_USE = False       #지역번판에 CRNN 사용여부
+REG_CRNN_MODEL_USE = True       #지역번판에 CRNN 사용여부
 crnn_categories = []
 crnn_cat_filename = 'chcrnn_categories.txt'
 reg_crnn_categories = []
@@ -156,7 +156,7 @@ def number_det_init_fn():
                 
         REG_CRNN_CATEGORIES_FILE_PATH = os.path.join(ROOT_DIR,REG_CRNN_MODEL_DIR,reg_crnn_cat_filename)
 
-        file = open(REG_CRNN_CATEGORIES_FILE_PATH, "r")
+        file = open(REG_CRNN_CATEGORIES_FILE_PATH, "r",encoding='UTF8')
         while True:
             line = file.readline()
             if not line:
@@ -252,7 +252,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 basefilename, ext = os.path.splitext(filename)
                 result_save_filename_ch = basefilename + '_' + ch + ext  # 저장할 파일명을 만든다.
                 result_save_fullpath_ch = os.path.join(result_path_char,result_save_filename_ch)
-                det_image_np = cv2.cvtColor(det_image_np, cv2.COLOR_RGB2BGR)
+                #det_image_np = cv2.cvtColor(det_image_np, cv2.COLOR_RGB2BGR)
                 imwrite( result_save_fullpath_ch, det_image_np)
                 
         if category_index[cindex]['name'] == 'hReg' :
