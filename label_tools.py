@@ -26,6 +26,10 @@ import matplotlib.image as Image
 IOU_THESHOLD = 0.3
 # 파라미터 ================================================================
 NUM_THRESH_HOLD = 0.4
+#임시 문자, 지역 확률 기준
+IMSI_CHAR_THRESH_HOLD = 0.7
+#임시번호판 숫자 확률 기준
+IMSI_NUMBER_THRESH_HOLD = 0.8
 #================================================================
 # NpEncoder class ================================================================
 class NpEncoder(json.JSONEncoder):
@@ -432,6 +436,10 @@ def onlyOneRegion(objTable, twoLinePlate) :
 
     
     return objTable, twoLinePlate
+
+# check wheather list is consecutive or not
+def checkConsecutive(l):
+    return sorted(l) == list(range(min(l), max(l)+1))
             
 #Object Detection API에서의  번호/문자 인식 내용을 추출 한다.    
 def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, twoLinePlate) :
@@ -485,35 +493,21 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
             # 번호판 상하단 구분 위한 코드
             #ref = objTable[:,2].mean(axis = 0)
             
-            #y 높이 순으로 정렬
-            v_order_arr = objTable[objTable[:,2].argsort()]
-            # y 갋만 뽑음
-            ycol1 = v_order_arr[:,2]
-            # 한개 차이로 
-            ycol2 = ycol1[1:]
-            ycol2 = np.append(ycol2,ycol2[-1])
-            result = ycol2 - ycol1
-            ref = result.argmax()
+            # y 값만 뽑음
+            ycol = (objTable[:,2] + objTable[:,4])/2
+            xcol =  (objTable[:,3] + objTable[:,5])/2
+            objBox = objTable[:,2:6]
+            a, b = least_square_line(np.array(xcol),np.array(ycol))
+            y_pre = a*np.array(xcol) + b
             
-            type = platetype_index
-            # if type in twolinePlate or twoLinePlate :
-            #     plate2line = True
-            #     print("2line")
-            # else:
-            #     print("1line")
+            insideBoxList = [index for (index, x) in enumerate(xcol) if isPointInsideBox(x,y_pre[index],objBox[index]) ]
             
-            box_height = v_order_arr[:,4] - v_order_arr[:,2]  # box 놀이를 구한다.
-    
-            if ref >= 0 and ref < len(result) - 1 :
-                upbox_avr =  Average(box_height[:ref+1])
-                lobox_avr =  Average(box_height[ref+1 :])
-                if result[ref] > upbox_avr/2:
-                    plate2line = True
-                    print("2line")
-                
-            else:
+            if len(insideBoxList) == len(objTable):
                 plate2line = False
                 print("1line")
+            else:
+                plate2line = True
+                print("2line")
             
             if plate2line :
                 # 2line 번호판이면...
@@ -521,11 +515,12 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                 onelineTable = []
                 twolineTalbe = []
                 
-                for index ,type in enumerate(v_order_arr):
-                    if index <= ref :
+                for index ,type in enumerate(objTable):
+                    if ycol[index] < y_pre[index] :
                         onelineTable.append(list(type))
                     else:
                         twolineTalbe.append(list(type))
+                
                 onelineTable = np.array(onelineTable)
                 twolineTalbe = np.array(twolineTalbe)
                 if onelineTable.size :
@@ -592,15 +587,29 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                             arr = np.concatenate([res,arr],axis=0)
                             plateTable = arr
                         
-                    #숫자의 갯수를 구한다. 
+                    #숫자의 갯수를 구한다.
+                    #임시 번호판인 경우
                     onelineTableclass = plateTable[:,0]
                     numberClassList  =  list(filter(lambda x : x <= 10 ,onelineTableclass))
+                    numberClassList = [int(item) for item in numberClassList]
+                    
+                    numberClassListIndex = [index for (index, item) in enumerate(onelineTableclass) if item in numberClassList ]
+                    
                     #문자및 지역의 갯수를 구한다.
                     nonNumberClassList = list(filter(lambda x : x > 10 ,onelineTableclass))
+                    nonNumberClassList = [int(item) for item in nonNumberClassList]
+                    nonnumberClassListIndex = [index for (index, item) in enumerate(onelineTableclass) if item in nonNumberClassList ]
+                    
                     #천번째 자리가 숫자가 아니면...
-                    if len(nonNumberClassList) == 1 and nonNumberClassList[0] > 10 :
-                        if len(numberClassList) == 4 or len(numberClassList) == 6 :
-                            plateTable = plateTable[1:]
+                    if (len(nonNumberClassList) > 0 and checkConsecutive(nonnumberClassListIndex)) or len(nonNumberClassList) == 0 :
+                        #모든 문자, 지역의 확률이 낮은지 확인한다.
+                        nonNumberClassConditionList = [index for (index, item) in enumerate(plateTable) if item[1] > IMSI_CHAR_THRESH_HOLD and index in nonNumberClassList ]
+                        numStartIndex = len(nonNumberClassList)
+                        if len(numberClassList) == 4 or len(numberClassList) == 6 and checkConsecutive(numberClassListIndex) and len(nonNumberClassConditionList) == 0:
+                            #모든 숫자가 일정 수준이상의 확률인지 확인한다.
+                            numberClassConditionList = [index for (index, item) in enumerate(plateTable) if item[1] < IMSI_NUMBER_THRESH_HOLD and index in numberClassList]
+                            if len(numberClassConditionList) == 0 :
+                                plateTable = plateTable[numStartIndex:]
                             
 
             plateTable = rmOverlapBoxs(plateTable=plateTable)
@@ -1177,7 +1186,19 @@ def checkKeyinRegionDictionary( dic, kval) :
                     keyFind = True
 
     return keyFind, kval
-
+#포이튼가 박스 안에 있는지 첵크한다.
+def isPointInsideBox(x, y ,box):
+  state = False
+  b_xmin = min(box[1], box[3])
+  b_xmax = max(box[1], box[3])
+  b_ymin = min(box[0], box[2])
+  b_ymax = max(box[0], box[2])
+  
+  if (x > b_xmin and x < b_xmax) and (y > b_ymin and y < b_ymax) :
+      state = True
+      
+  return state
+   
 # box1 이 box2 안에 있는지 여부를 첵크함.
 def isInside(box1, box2):
     #box1 = (y1, x1, y2, x2)
