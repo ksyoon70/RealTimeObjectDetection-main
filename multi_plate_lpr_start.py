@@ -46,7 +46,7 @@ test_dir_name = 'test'
 show_image = False
 save_image = False
 save_true_recog_image = False          #정인식 영상 저장 여부
-add_platename = True               #번호인식 결과를 파일이름에 붙일지 여부
+add_platename = False               #번호인식 결과를 파일이름에 붙일지 여부
 THRESH_HOLD = 0.5
 PLATE_THRESH_HOLD = 0.4             
 IS_RESULT_DIR_REMOVE = True #결과 디렉토리 삭제 여부
@@ -452,7 +452,7 @@ try:
     print('정인식: {:}'.format(true_recog_count) +'  ({:.2f})'.format(true_recog_count*100/recog_count) + ' %')
     print('오인식: {:}'.format(false_recog_count) +'  ({:.2f})'.format(false_recog_count*100/recog_count) + ' %')
     print('인식실패: {}'.format(fail_count) +'  ({:.2f})'.format(fail_count*100/total_test_files) + ' %') 
-    print('정인식율: {}'.format(fail_count) +'  ({:.2f})'.format(true_recog_count*100/total_test_files) + ' %') 
+    print('정인식율: {}'.format(true_recog_count) +'  ({:.2f})'.format(true_recog_count*100/total_test_files) + ' %') 
  
     
 except Exception as e:

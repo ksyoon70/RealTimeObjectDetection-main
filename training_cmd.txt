@@ -1,6 +1,37 @@
-python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plate\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --num_train_steps=10000
+아래 내용은 검증 필요
+Tensorflow Object Detection API SSD mobile v2에서 train과 validation을 동시에 하려면, 다음과 같이 명령어를 입력하면 됩니다1:
 
-python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plateimage\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --num_train_steps=100000
+리눅스에서
+CUDA_VISIBLE_DEVICES="" python ..\models\research\object_detection\model_main_tf2.py --pipeline_config_path=Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --model_dir=Tensorflow\workspace\models\car-plate\my_ssd_mobnet --checkpoint_dir=Tensorflow\workspace\models\car-plate\my_ssd_mobnet --sample_1_of_n_eval_examples=1 --alsologtostderr
+윈도우에서  
+evaluation
+set CUDA_VISIBLE_DEVICES="" & python ..\models\research\object_detection\model_main_tf2.py --pipeline_config_path=Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --model_dir=Tensorflow\workspace\models\car-plate\my_ssd_mobnet --checkpoint_dir=Tensorflow\workspace\models\car-plate\my_ssd_mobnet --sample_1_of_n_eval_examples=1 --alsologtostderr
+
+python model_main_tf2.py --model_dir=models/my_ssd_mobilenet_v2 --pipeline_config_path=models/my_ssd_mobilenet_v2/pipeline.config --num_train_steps=46875 --sample_1_of_n_eval_examples=1 --alsologtostderr
+
+여기서 --model_dir은 모델이 저장될 폴더 경로, --pipeline_config_path는 모델 구성 파일 경로, --num_train_steps는 학습할 스텝 수, --sample_1_of_n_eval_examples는 validation 데이터셋에서 몇 번째 예제를 사용할지를 결정하는 변수입니다1.
+
+#python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\car-plate\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --num_train_steps=46875 --checkpoint_every_n=200 --sample_1_of_n_eval_examples=1 --alsologtostderr
+car-plate 트레이닝 명령어.
+python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\car-plate\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --num_train_steps=46875 --checkpoint_every_n=1000  --alsologtostderr
+evaluation
+set CUDA_VISIBLE_DEVICES="" & python ..\models\research\object_detection\model_main_tf2.py --pipeline_config_path=Tensorflow\workspace\models\car-plate\my_ssd_mobnet\pipeline.config --model_dir=Tensorflow\workspace\models\car-plate\my_ssd_mobnet --checkpoint_dir=Tensorflow\workspace\models\car-plate\my_ssd_mobnet --sample_1_of_n_eval_examples=1 --alsologtostderr
+
+
+
+
+python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plate\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --num_train_steps=10000
+train
+python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plateimage\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --num_train_steps=143866 --checkpoint_every_n=1000  --alsologtostderr
+evaluation
+set CUDA_VISIBLE_DEVICES="" & python ..\models\research\object_detection\model_main_tf2.py --pipeline_config_path=Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --model_dir=Tensorflow\workspace\models\plateimage\my_ssd_mobnet --checkpoint_dir=Tensorflow\workspace\models\plateimage\my_ssd_mobnet --sample_1_of_n_eval_examples=1 --alsologtostderr
+이륜차
+python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\mplateimage\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\mplateimage\my_ssd_mobnet\pipeline.config --num_train_steps=16785 --checkpoint_every_n=1000  --alsologtostderr
+evaluation
+set CUDA_VISIBLE_DEVICES="" & python ..\models\research\object_detection\model_main_tf2.py --pipeline_config_path=Tensorflow\workspace\models\mplateimage\my_ssd_mobnet\pipeline.config --model_dir=Tensorflow\workspace\models\mplateimage\my_ssd_mobnet --checkpoint_dir=Tensorflow\workspace\models\mplateimage\my_ssd_mobnet --sample_1_of_n_eval_examples=1 --alsologtostderr
+
+
+
 
 check point를 saved model로 변환
 Tf2
@@ -196,3 +227,12 @@ python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-model
 이륜차 hr onnx 저장
 python -m tf2onnx.convert --saved-model .\exported-models\motor_hr_model\saved_model --opset 13 --output .\exported-models\motor_hr_model\model.onnx --inputs resnet50_input:0[1,224,224,3] --inputs-as-nchw resnet50_input:0
 python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\motor_hr_model\model.onnx --engine .\exported-models\motor_hr_model\engine.trt --precision fp16
+
+
+char crnn onnx 저장
+python -m tf2onnx.convert --saved-model .\exported-models\char_crnn_model\saved_model --opset 13 --output .\exported-models\char_crnn_model\model.onnx --inputs image:0[1,224,224,3] --inputs-as-nchw image:0
+python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\char_crnn_model\model.onnx --engine .\exported-models\char_crnn_model\engine.trt --precision fp16
+
+reg crnn onnx 저장
+python -m tf2onnx.convert --saved-model .\exported-models\reg_crnn_model\saved_model --opset 13 --output .\exported-models\reg_crnn_model\model.onnx --inputs image:0[1,224,224,3] --inputs-as-nchw image:0
+python .\tensorflow_object_detection_api\build_engine.py --onnx .\exported-models\reg_crnn_model\model.onnx --engine .\exported-models\reg_crnn_model\engine.trt --precision fp16

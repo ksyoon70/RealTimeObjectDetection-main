@@ -27,7 +27,7 @@ IOU_THESHOLD = 0.3
 # 파라미터 ================================================================
 NUM_THRESH_HOLD = 0.4
 #임시 문자, 지역 확률 기준
-IMSI_CHAR_THRESH_HOLD = 0.8
+IMSI_CHAR_THRESH_HOLD = 0.7
 #임시번호판 숫자 확률 기준
 IMSI_NUMBER_THRESH_HOLD = 0.8
 #================================================================
@@ -453,7 +453,6 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
     
     upbox_avr = 0
     lobox_avr = 0
-    num_cnt = 0                          #숫자 갯수
     
     num_detections = detect['num_detections']
     plate2line = False
@@ -494,21 +493,35 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
             # 번호판 상하단 구분 위한 코드
             #ref = objTable[:,2].mean(axis = 0)
             
-            # y 값만 뽑음
-            ycol = (objTable[:,2] + objTable[:,4])/2
-            xcol =  (objTable[:,3] + objTable[:,5])/2
-            objBox = objTable[:,2:6]
-            a, b = least_square_line(np.array(xcol),np.array(ycol))
-            y_pre = a*np.array(xcol) + b
+            #y 높이 순으로 정렬
+            v_order_arr = objTable[objTable[:,2].argsort()]
+            # y 갋만 뽑음
+            ycol1 = v_order_arr[:,2]
+            # 한개 차이로 
+            ycol2 = ycol1[1:]
+            ycol2 = np.append(ycol2,ycol2[-1])
+            result = ycol2 - ycol1
+            ref = result.argmax()
             
-            insideBoxList = [index for (index, x) in enumerate(xcol) if isPointInsideBox(x,y_pre[index],objBox[index]) ]
+            type = platetype_index
+            # if type in twolinePlate or twoLinePlate :
+            #     plate2line = True
+            #     print("2line")
+            # else:
+            #     print("1line")
             
-            if len(insideBoxList) == len(objTable):
+            box_height = v_order_arr[:,4] - v_order_arr[:,2]  # box 놀이를 구한다.
+    
+            if ref >= 0 and ref < len(result) - 1 :
+                upbox_avr =  Average(box_height[:ref+1])
+                lobox_avr =  Average(box_height[ref+1 :])
+                if result[ref] > upbox_avr/2:
+                    plate2line = True
+                    print("2line")
+                
+            else:
                 plate2line = False
                 print("1line")
-            else:
-                plate2line = True
-                print("2line")
             
             if plate2line :
                 # 2line 번호판이면...
@@ -516,12 +529,11 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                 onelineTable = []
                 twolineTalbe = []
                 
-                for index ,type in enumerate(objTable):
-                    if ycol[index] < y_pre[index] :
+                for index ,type in enumerate(v_order_arr):
+                    if index <= ref :
                         onelineTable.append(list(type))
                     else:
                         twolineTalbe.append(list(type))
-                
                 onelineTable = np.array(onelineTable)
                 twolineTalbe = np.array(twolineTalbe)
                 if onelineTable.size :
@@ -552,18 +564,15 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                             arr = np.concatenate([arr,res],axis=0)
                             twolineTalbe = arr
                         if cindex != 0 and  platetype_index != 9:
-                            twolineTalbe = checkTwoNumAhead(rindex=cindex, objTable=twolineTalbe)    
-                            
+                            twolineTalbe = checkTwoNumAhead(rindex=cindex, objTable=twolineTalbe)
                 if onelineTable.size and twolineTalbe.size:
                     plateTable = np.append(onelineTable,twolineTalbe, axis=0)
                 elif onelineTable.size:
                     plateTable =  onelineTable
                 elif twolineTalbe.size:
                     plateTable =  twolineTalbe
-                    
-                
     
-            else:       # 1줄 번호판에 대한 로직
+            else:
                     onelineTable = objTable
                     plateTable = onelineTable[onelineTable[:,-1].argsort()]
                     onelineTableclass = plateTable[:,0]
@@ -614,11 +623,10 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                             numberClassConditionList = [index for (index, item) in enumerate(plateTable) if item[1] < IMSI_NUMBER_THRESH_HOLD and index in numberClassList]
                             if len(numberClassConditionList) == 0 :
                                 plateTable = plateTable[numStartIndex:]
-                    
-            plateTable = rmOverlapBoxs(plateTable=plateTable)                            
-            #1줄,2줄 번호판 판정로직 종료
+                            
+
+            plateTable = rmOverlapBoxs(plateTable=plateTable)
             num_detections = plateTable.shape[0] #갯수가 바뀔수 있다.
-            
             for i in range(0,num_detections) :
                 class_index = int(plateTable[i][0])
                 label = category_index[class_index]['name']
@@ -631,8 +639,6 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                     hReg = True
                 elif class_index == 14:
                     oReg = True
-                elif class_index > 0 and class_index <= 10 :
-                    num_cnt += 1
                     
         else:
             print('에러 번호판 아님')
@@ -642,12 +648,13 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
            
     #번호판 타입을 결정한다.
     if not plate2line :
-        if vReg == True and uChar == True and num_cnt == 6:
+        if vReg == True:
             platetype_index = 5 # type5와 type10이 있지만, type5로 일단한다.
-        elif vReg == False and uChar == True and num_cnt == 7:
+        elif len(plate_str) == 8 and uChar == True:
             platetype_index = 9 # 번호판 글자가 8자이고 용도문자가 있으면 type9(3자리 번호)로 한다.
-        elif vReg == False and uChar == True and num_cnt == 6:
-            platetype_index = 8         #7자리 이면 type8로 정한다.
+        elif len(plate_str) == 7 and uChar == True:
+            if platetype_index != 3:  # 타입이 3이 아니면 8로 한다.
+                platetype_index = 8         #7자리 이면 type8로 정한다.
         else:
             platetype_index = 3
     else :
@@ -656,7 +663,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
             platetype_index = 6
         elif hReg == True:
             platetype_index = 1 # type1과 type2가 있지만 일단 type1로 설정
-        elif (oReg == False and hReg == False) and uChar == True and num_cnt == 6 :
+        elif lobox_avr > upbox_avr*1.5 : #윗쪽 문자 평균 놑이*1.5배 보다 아랫쪽 문자 높이가 크면
             platetype_index = 4
         else:
             platetype_index = 7  #그 외에는 type7번으로 한다.

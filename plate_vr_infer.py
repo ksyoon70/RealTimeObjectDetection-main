@@ -73,4 +73,4 @@ def vr_det_fn(model, img_np, vr_thresh_hold) :
         predic_label = 'x'
         
     print('확률:{}%'.format(preds[0][index]*100 ))
-    return  predic_label
+    return  predic_label, preds[0][index]  #인식율도 함께 리턴한다.

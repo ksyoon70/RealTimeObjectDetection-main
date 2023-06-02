@@ -37,14 +37,14 @@ import numpy as np
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-usage = 'valid' # train or valid
+usage = 'train' # train or valid
 dataset_category='car-plate' #plateimage
 bFilterMap = None # filter map을 사용하는지 여부
 #========================
 
 if dataset_category == 'car-plate':
     label_file = 'label_map.pbtxt'
-    fsLabelFileName = "LPR_Car-Plate_Labels_2.txt" #변경하고자 하는 레이블 명이다.
+    fsLabelFileName = "LPR_Car-Plate_Labels.txt" #변경하고자 하는 레이블 명이다.
     filterFileName = "Car_PlateFiltermap.txt"  #필터 맵 파일이다.
     bFilterMap = True
 elif dataset_category == 'plateimage':
@@ -203,10 +203,12 @@ def json_to_csv(path):
                 points = shape['points']
                 shape_type = shape['shape_type']
                 label = shape['label']
-                
-                if label  in ConvMap:
-                    label = ConvMap[label]
+
                 if any(item == label for item in CLASS_NAMES):
+                    
+                    if label  in ConvMap:
+                        label = ConvMap[label]
+                        
                     arr =np.array(points)
                     if shape_type == 'polygon':
                         xmin = np.min(arr[:,0])

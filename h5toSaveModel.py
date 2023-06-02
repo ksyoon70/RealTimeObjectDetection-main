@@ -23,8 +23,8 @@ import natsort
 import time
 import pandas as pd
 import argparse
-
 from label_tools import *
+from CRNN_Model import *
 
 font_path = "C:/Windows/Fonts/NGULIM.TTF"
 font = font_manager.FontProperties(fname=font_path).get_name()
@@ -40,7 +40,7 @@ config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 ROOT_DIR = os.getcwd()
 sys.path.append(ROOT_DIR) 
 #----------------------------
-DEFAULT_OBJ_TYPE = 'm_ch'
+DEFAULT_OBJ_TYPE = 'reg_crnn' # ch_crnn, reg_crnn
 SAVE_FOLDER_NAME = 'saved_model'
 #----------------------------
 DEFAULT_MODEL_PATH = None
@@ -75,6 +75,14 @@ elif DEFAULT_OBJ_TYPE == 'm_hr':
     DEFAULT_MODEL_DIR = 'm_hreg_model'
     DEFAULT_SAVE_MODEL_DIR = 'motor_hr_model'
     CATEGORIES_FILE_NAME = 'hregion_categories.txt'
+elif DEFAULT_OBJ_TYPE == 'ch_crnn':
+    DEFAULT_MODEL_DIR = 'char_crnn_model'
+    DEFAULT_SAVE_MODEL_DIR = 'char_crnn_model'
+    CATEGORIES_FILE_NAME = 'chcrnn_categories.txt'
+elif DEFAULT_OBJ_TYPE == 'reg_crnn':
+    DEFAULT_MODEL_DIR = 'reg_crnn_model'
+    DEFAULT_SAVE_MODEL_DIR = 'reg_crnn_model'
+    CATEGORIES_FILE_NAME = 'regcrnn_categories.txt'
 
 filelist =  os.listdir(os.path.join(ROOT_DIR,DEFAULT_MODEL_DIR))    
 for fn in filelist :
@@ -114,8 +122,6 @@ parser.add_argument("-d",
 args = parser.parse_args()
 
 
-
-    
 #read model
 model = load_model(args.modelfile)
 #read weight value from trained dir
@@ -125,7 +131,11 @@ model.load_weights(weight_path)
 if not os.path.isdir(args.destpath):
     createFolder(args.destpath)
 
+if args.modeltype == 'ch_crnn' or args.modeltype == 'reg_crnn':
+    model.summary()
+
 model.save(args.destpath)
+    
 
 #카테고리 파일을 복사한다.
 src = os.path.join(ROOT_DIR,DEFAULT_MODEL_DIR,CATEGORIES_FILE_NAME)

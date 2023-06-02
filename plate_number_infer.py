@@ -56,9 +56,9 @@ reg_crnn_cat_filename = 'regcrnn_categories.txt'
 CHAR_CRNN_MODEL_DIR = 'char_crnn_model'      #CRNN 모델 위치 
 REG_CRNN_MODEL_DIR = 'reg_crnn_model'      #CRNN 모델 위치 
 CH_THRESH_HOLD = 0.7
-HR_THRESH_HOLD = 0.5
-OR_THRESH_HOLD = 0.5
-VR_THRESH_HOLD = 0.5
+HR_THRESH_HOLD = 0.8
+OR_THRESH_HOLD = 0.8
+VR_THRESH_HOLD = 0.8
 #========================
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
 ANNOTATION_PATH = os.path.join(WORKSPACE_PATH,'annotations')
@@ -223,25 +223,34 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
     twoLinePlate = False
     category_index_temp = copy.deepcopy(category_index)
     for index, cindex in enumerate(detections['detection_classes']+label_id_offset) :
+        prob = 0.0
         if category_index[cindex]['name'] == 'Char' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if CRNN_MODEL_USE:
                 #CRNN 모델을 사용하여 문자를 추출합니다.
                 crnn_image_np = np.swapaxes(det_image_np,0,1)
+                #cv2.imwrite('D:/mytest.jpg',crnn_image_np) #test code
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
-                ch_crnn, probs = crnn_model.predict(crnn_image_np)
-                ch = ch_crnn[0]
-                if ch == '[UNK]' or probs[0] <= CH_THRESH_HOLD:
-                    #ch = 'x'
-                    ch = char_det_fn(cdet_model,det_image_np,ch_thresh_hold=CH_THRESH_HOLD,predict_anyway=save_char)
-                    print('용도문자 CNN으로만 다시시도 ....인식내용{}'.format(ch))
+                ch_crnn, probs1 = crnn_model.predict(crnn_image_np)
+                ch1 = ch_crnn[0]
+                ch2 , probs2= char_det_fn(cdet_model,det_image_np,ch_thresh_hold=CH_THRESH_HOLD,predict_anyway=save_char)
+                if ch1 == '[UNK]' or probs1[0] <= CH_THRESH_HOLD:
+                    ch1 = 'x'
+                    #print('용도문자 CNN으로만 다시시도 ....인식내용{}'.format(ch))
+                if (probs1[0] >= probs2) : 
+                    ch = ch1
+                    prob =  probs1[0]
+                else:    
+                    ch = ch2
+                    prob = probs2
                 category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
                 #검시 확률을 업데이트 한다.
-                detections['detection_scores'][index] = probs[0] 
-                print('한글인식 {} 확률 {:.2f}'.format(ch,probs[0]*100))
+                detections['detection_scores'][index] = prob
+                print('한글인식 {} 확률 {:.2f}'.format(ch,prob*100))
             else:
-                ch = char_det_fn(cdet_model,det_image_np,ch_thresh_hold=CH_THRESH_HOLD,predict_anyway=save_char)
+                ch , prob= char_det_fn(cdet_model,det_image_np,ch_thresh_hold=CH_THRESH_HOLD,predict_anyway=save_char)
                 category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
+                detections['detection_scores'][index] = prob
             if save_char:
                 # 문자영상을 저장하고 싶으면 여기서 저장한다.
                 # 저장 경로 루트
@@ -263,25 +272,30 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 #CRNN 모델을 사용하여 문자를 추출합니다.
                 crnn_image_np = np.swapaxes(det_image_np,0,1)
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
-                ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
-                ch = ch_crnn[0]
-                print('H지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
-                if ch == '[UNK]' or probs[0] <= HR_THRESH_HOLD:
-                    #ch = 'x'
-                    ch = hr_det_fn(hr_det_model,det_image_np,hr_thresh_hold=HR_THRESH_HOLD)
-                    print('H지역 CNN으로만 다시시도 ....인식내용{}'.format(ch))
+                ch_crnn, probs1 = reg_crnn_model.predict(crnn_image_np)
+                ch1 = ch_crnn[0]
+                ch2, probs2 = hr_det_fn(hr_det_model,det_image_np,hr_thresh_hold=HR_THRESH_HOLD)
+                if ch1 == '[UNK]' or probs1[0] <= HR_THRESH_HOLD:
+                    ch1 = 'x'
+                    #print('H지역 CNN으로만 다시시도 ....인식내용{}'.format(ch))
                 else:
-                    find, ch = checkKeyinRegionDictionary(REV_HCLASS_DIC,ch)
+                    find, ch1 = checkKeyinRegionDictionary(REV_HCLASS_DIC,ch1)
                     if not find :
-                        ch = 'x'
-
+                        ch1 = 'x'
+                if (probs1[0] >= probs2) : 
+                    ch = ch1
+                    prob =  probs1[0]
+                else:    
+                    ch = ch2
+                    prob = probs2   
                 category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
                 #검시 확률을 업데이트 한다.
-                detections['detection_scores'][index] = probs[0] 
-                
+                detections['detection_scores'][index] = prob
+                print('H지역 {} 확률 {:.2f}'.format(ch,prob*100))  
             else :
-                ch = hr_det_fn(hr_det_model,det_image_np,hr_thresh_hold=HR_THRESH_HOLD)
+                ch ,prob= hr_det_fn(hr_det_model,det_image_np,hr_thresh_hold=HR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
+                detections['detection_scores'][index] = prob
                 twoLinePlate = True
         if category_index[cindex]['name'] == 'vReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
@@ -289,60 +303,74 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 #CRNN 모델을 사용하여 문자를 추출합니다.
                 crnn_image_np = np.swapaxes(det_image_np,0,1)
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
-                ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
-                ch = ch_crnn[0]
-                print('V지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
-                if ch == '[UNK]' or probs[0] <= VR_THRESH_HOLD:
-                    #ch = 'x'
-                    ch = vr_det_fn(vr_det_model,det_image_np, vr_thresh_hold=VR_THRESH_HOLD)
-                    print('V지역 CNN으로만 다시시도 ....인식내용{}'.format(ch))
+                ch_crnn, probs1 = reg_crnn_model.predict(crnn_image_np)
+                ch1 = ch_crnn[0]
+                ch2, probs2 = vr_det_fn(vr_det_model,det_image_np, vr_thresh_hold=VR_THRESH_HOLD)
+                if ch1 == '[UNK]' or probs1[0] <= VR_THRESH_HOLD:
+                    ch1 = 'x'
+                    #ch = vr_det_fn(vr_det_model,det_image_np, vr_thresh_hold=VR_THRESH_HOLD)
+                    #print('V지역 CNN으로만 다시시도 ....인식내용{}'.format(ch))
                 else:
-                    find, ch = checkKeyinRegionDictionary(REV_VCLASS_DIC,ch)
+                    find, ch1 = checkKeyinRegionDictionary(REV_VCLASS_DIC,ch1)
                     if not find :
-                        ch = 'x'
+                        ch1 = 'x'
+                if (probs1[0] >= probs2) : 
+                    ch = ch1
+                    prob =  probs1[0]
+                else:    
+                    ch = ch2
+                    prob = probs2
+                    
                 category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
                 #검시 확률을 업데이트 한다.
-                detections['detection_scores'][index] = probs[0] 
-                
+                detections['detection_scores'][index] = prob
+                print('V지역 {} 확률 {:.2f}'.format(ch,prob*100))
             else:
                 ch = vr_det_fn(vr_det_model,det_image_np, vr_thresh_hold=VR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
+                detections['detection_scores'][index] = prob
         if category_index[cindex]['name'] == 'oReg':
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if REG_CRNN_MODEL_USE :
                 #CRNN 모델을 사용하여 문자를 추출합니다.
                 crnn_image_np = np.swapaxes(det_image_np,0,1)
                 crnn_image_np = np.expand_dims(crnn_image_np,0)
-                ch_crnn, probs = reg_crnn_model.predict(crnn_image_np)
-                ch = ch_crnn[0]
-                print('O지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
-                if ch == '[UNK]' or probs[0] <= OR_THRESH_HOLD:
-                    #ch = 'x'
-                    ch = or_det_fn(or_det_model,det_image_np, or_thresh_hold=OR_THRESH_HOLD)
-                    print('O지역 CNN으로만 다시시도 ....인식내용{}'.format(ch))
+                ch_crnn, probs1 = reg_crnn_model.predict(crnn_image_np)
+                ch1 = ch_crnn[0]
+                
+                ch2, probs2 = or_det_fn(or_det_model,det_image_np, or_thresh_hold=OR_THRESH_HOLD)
+                if ch1 == '[UNK]' or probs1[0] <= OR_THRESH_HOLD:
+                    ch1 = 'x'
+                    #ch = or_det_fn(or_det_model,det_image_np, or_thresh_hold=OR_THRESH_HOLD)
+                    #print('O지역 CNN으로만 다시시도 ....인식내용{}'.format(ch))
                 else:
-                    find, ch = checkKeyinRegionDictionary(REV_OCLASS_DIC,ch)
+                    find, ch1 = checkKeyinRegionDictionary(REV_OCLASS_DIC,ch1)
                     if not find :
-                        ch = 'x'
-                        
+                        ch1 = 'x'
+                if (probs1[0] >= probs2) : 
+                    ch = ch1
+                    prob =  probs1[0]
+                else:    
+                    ch = ch2
+                    prob = probs2    
                 category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
                 #검시 확률을 업데이트 한다.
-                detections['detection_scores'][index] = probs[0] 
+                detections['detection_scores'][index] = prob
+                print('O지역 {} 확률 {:.2f}'.format(ch,prob*100))
                 
             else:
                 ch = or_det_fn(or_det_model,det_image_np, or_thresh_hold=OR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
+                detections['detection_scores'][index] = prob
                 twoLinePlate = True
     
     plate_str, plateTable, plate2line, platetype_index =  predictPlateNumberODAPI(detections,platetype_index,category_index_temp, CLASS_DIC, twoLinePlate=twoLinePlate)
-  
-  
     
     if show_image :
         plt.imshow(image_np_with_detections)
         plt.show()
         
-    return plate_str, plateTable, category_index_temp, CLASS_DIC, platetype_index
+    return plate_str, plateTable, category_index_temp, CLASS_DIC, plate2line, platetype_index
             
 
 

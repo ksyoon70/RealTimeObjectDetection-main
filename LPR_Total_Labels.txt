@@ -113,6 +113,8 @@ Gong,공
 Guk,국
 Hap,합
 Bae,배
+Hyphen,-
+Cml,○
 vSeoul,서울
 vIncheon,인천
 vBuSan,부산
@@ -290,3 +292,4 @@ bicycle,자전거
 plate,번호판
 human,사람
 helmet,헬멧
+kickboard,킥보드

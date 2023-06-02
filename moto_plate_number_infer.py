@@ -236,7 +236,7 @@ def moto_plate_number_detect_fn(models, imageRGB, category_index,platetype_index
                 detections['detection_scores'][index] = probs[0] 
                 print('한글인식 {} 확률 {:.2f}'.format(ch,probs[0]*100))
             else:
-                ch = moto_char_det_fn(cdet_model,det_image_np,ch_thresh_hold=MOTO_CH_THRESH_HOLD,predict_anyway=save_char)
+                ch, prob = moto_char_det_fn(cdet_model,det_image_np,ch_thresh_hold=MOTO_CH_THRESH_HOLD,predict_anyway=save_char)
                 plate_class_id.append(LABEL_FILE_CLASS.index(REV_CLASS_DIC[ch]))
             if save_char:
                 # 문자영상을 저장하고 싶으면 여기서 저장한다.
@@ -271,7 +271,7 @@ def moto_plate_number_detect_fn(models, imageRGB, category_index,platetype_index
                 detections['detection_scores'][index] = probs[0] 
                 print('H지역 {} 확률 {:.2f}'.format(ch,probs[0]*100))
             else :
-                ch = moto_hr_det_fn(hr_det_model,det_image_np,hr_thresh_hold=MOTO_HR_THRESH_HOLD)
+                ch, prob = moto_hr_det_fn(hr_det_model,det_image_np,hr_thresh_hold=MOTO_HR_THRESH_HOLD)
                 plate_class_id.append(LABEL_FILE_CLASS.index(REV_HCLASS_DIC[ch]))
                 
         else:

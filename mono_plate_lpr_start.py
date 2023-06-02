@@ -227,7 +227,14 @@ try:
                 #320x320영상에 번호판을 붙여 넣는다.
                 plate_new_img_np[yoff:yoff+h, xoff:xoff+w , :] = cropped_img            
                 #번호판에 대하여 문자 및 번호를 인식한다.
-                plate_str, plateTable,category_index_temp, CLASS_DIC,class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+                plate_str, plateTable,category_index_temp, CLASS_DIC,plate2line, class_index = plate_number_detect_fn(models,plate_new_img_np,ncat_index, class_index,result_path=result_path)
+                
+                if plate2line == False and class_index == 8 :
+                    # 번호판 타입을 3으로 바꿀수 있는지 확인..
+                    plate_width =  old_size[0]
+                    plate_height = old_size[1]
+                    if  plate_width < plate_height * 3 : #보통 3.9배 정도로 추정 됨.
+                        class_index =  3               # type3 으로 바꿈.
 
                 #plate_new_img_np = cv2.cvtColor(plate_new_img_np, cv2.COLOR_RGB2BGR)
             
