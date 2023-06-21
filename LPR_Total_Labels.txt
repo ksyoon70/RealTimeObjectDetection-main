@@ -132,6 +132,7 @@ vGyeongBuk,경북
 vGyeongNam,경남
 vJeJu,제주
 vUlSan,울산
+vDiplomacy,외교
 hSeoul,서울
 hIncheon,인천
 hBuSan,부산
@@ -149,6 +150,7 @@ hGyeongBuk,경북
 hGyeongNam,경남
 hJeJu,제주
 hUlSan,울산
+hDiplomacy,외교
 OpSeoul,서울
 OpIncheon,인천
 OpBuSan,부산

@@ -101,6 +101,8 @@ Gong,Char
 Guk,Char
 Hap,Char
 Bae,Char
+Hyphen,Char
+Cml,Char
 vSeoul,vReg
 vIncheon,vReg
 vBuSan,vReg

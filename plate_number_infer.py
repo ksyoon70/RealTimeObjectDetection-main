@@ -98,7 +98,7 @@ def number_det_init_fn():
     CLASS_DIC['x'] = 'x'
     
     global REV_CLASS_DIC
-    REV_CLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[LABEL_FILE_CLASS.index('n1'):LABEL_FILE_CLASS.index('Bae')+1],LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('n1'):LABEL_FILE_CLASS.index('Bae')+1]))
+    REV_CLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[LABEL_FILE_CLASS.index('n1'):LABEL_FILE_CLASS.index('Cml')+1],LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('n1'):LABEL_FILE_CLASS.index('Cml')+1]))
     REV_CLASS_DIC['x'] = 'x'
     
     global REV_VCLASS_DIC
