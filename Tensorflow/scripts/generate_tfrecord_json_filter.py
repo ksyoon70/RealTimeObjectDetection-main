@@ -38,7 +38,7 @@ import numpy as np
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
 usage = 'train' # train or valid
-dataset_category='car-plate' #plateimage
+dataset_category='plateimage' #plateimage
 bFilterMap = None # filter map을 사용하는지 여부
 #========================
 
@@ -49,7 +49,7 @@ if dataset_category == 'car-plate':
     bFilterMap = True
 elif dataset_category == 'plateimage':
     label_file = 'char_number_label_map.pbtxt'
-    fsLabelFileName = "LPR_Labels2.txt"
+    fsLabelFileName = "LPR_PlateImage_Labels.txt"
     filterFileName = "LPR_Filtermap.txt"  #필터 맵 파일이다.
     bFilterMap = True
 elif dataset_category == 'mplateimage':

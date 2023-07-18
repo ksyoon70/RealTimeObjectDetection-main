@@ -76,6 +76,7 @@ Mi,Char
 Bi,Char
 Si,Char
 I,Char
+Im,Char
 Ji,Char
 Chi,Char
 Ki,Char
@@ -107,6 +108,7 @@ vGyeongBuk,vReg
 vGyeongNam,vReg
 vJeJu,vReg
 vUlSan,vReg
+vDiplomacy,vReg
 hSeoul,hReg
 hIncheon,hReg
 hBuSan,hReg
@@ -124,6 +126,7 @@ hGyeongBuk,hReg
 hGyeongNam,hReg
 hJeJu,hReg
 hUlSan,hReg
+hDiplomacy,hReg
 OpSeoul,oReg
 OpIncheon,oReg
 OpBuSan,oReg

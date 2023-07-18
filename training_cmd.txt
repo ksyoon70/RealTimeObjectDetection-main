@@ -22,7 +22,7 @@ set CUDA_VISIBLE_DEVICES="" & python ..\models\research\object_detection\model_m
 
 python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plate\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plate\my_ssd_mobnet\pipeline.config --num_train_steps=10000
 train
-python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plateimage\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --num_train_steps=143866 --checkpoint_every_n=1000  --alsologtostderr
+python ..\models\research\object_detection\model_main_tf2.py --model_dir=Tensorflow\workspace\models\plateimage\my_ssd_mobnet --pipeline_config_path=Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --num_train_steps=60000 --checkpoint_every_n=2500  --alsologtostderr
 evaluation
 set CUDA_VISIBLE_DEVICES="" & python ..\models\research\object_detection\model_main_tf2.py --pipeline_config_path=Tensorflow\workspace\models\plateimage\my_ssd_mobnet\pipeline.config --model_dir=Tensorflow\workspace\models\plateimage\my_ssd_mobnet --checkpoint_dir=Tensorflow\workspace\models\plateimage\my_ssd_mobnet --sample_1_of_n_eval_examples=1 --alsologtostderr
 이륜차

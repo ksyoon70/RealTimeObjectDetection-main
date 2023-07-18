@@ -102,10 +102,10 @@ def number_det_init_fn():
     REV_CLASS_DIC['x'] = 'x'
     
     global REV_VCLASS_DIC
-    REV_VCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[LABEL_FILE_CLASS.index('vSeoul'):LABEL_FILE_CLASS.index('vUlSan')+1],LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('vSeoul'):LABEL_FILE_CLASS.index('vUlSan')+1]))
+    REV_VCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[LABEL_FILE_CLASS.index('vSeoul'):LABEL_FILE_CLASS.index('vDiplomacy')+1],LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('vSeoul'):LABEL_FILE_CLASS.index('vDiplomacy')+1]))
     REV_VCLASS_DIC['x'] = 'x'
     global REV_HCLASS_DIC
-    REV_HCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[LABEL_FILE_CLASS.index('hSeoul'):LABEL_FILE_CLASS.index('hUlSan')+1],LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('hSeoul'):LABEL_FILE_CLASS.index('hUlSan')+1]))
+    REV_HCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[LABEL_FILE_CLASS.index('hSeoul'):LABEL_FILE_CLASS.index('hDiplomacy')+1],LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('hSeoul'):LABEL_FILE_CLASS.index('hDiplomacy')+1]))
     REV_HCLASS_DIC['x'] = 'x'
     global REV_OCLASS_DIC
     REV_OCLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[LABEL_FILE_CLASS.index('OpSeoul'):LABEL_FILE_CLASS.index('OpUlSan')+1],LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('OpSeoul'):LABEL_FILE_CLASS.index('OpUlSan')+1]))
@@ -222,6 +222,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
     ch = None
     twoLinePlate = False
     category_index_temp = copy.deepcopy(category_index)
+    class_dic_id_list = []  #인식한 문자들...숫자로가지고 있어야... CLASS_DIC의 id
     for index, cindex in enumerate(detections['detection_classes']+label_id_offset) :
         prob = 0.0
         if category_index[cindex]['name'] == 'Char' :
@@ -243,13 +244,22 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 else:    
                     ch = ch2
                     prob = probs2
-                category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
+                
+                if ch != '○': # '○' 문자가 중복 된다.
+                    category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
+                label = REV_CLASS_DIC[ch]
+                label_index = list(CLASS_DIC.keys()).index(label)
+                class_dic_id_list.append(label_index)
                 #검시 확률을 업데이트 한다.
                 detections['detection_scores'][index] = prob
                 print('한글인식 {} 확률 {:.2f}'.format(ch,prob*100))
             else:
                 ch , prob= char_det_fn(cdet_model,det_image_np,ch_thresh_hold=CH_THRESH_HOLD,predict_anyway=save_char)
-                category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
+                if ch != '○':
+                    category_index_temp[cindex]['name'] = REV_CLASS_DIC[ch]
+                label = REV_CLASS_DIC[ch]
+                label_index = list(CLASS_DIC.keys()).index(label)
+                class_dic_id_list.append(label_index)
                 detections['detection_scores'][index] = prob
             if save_char:
                 # 문자영상을 저장하고 싶으면 여기서 저장한다.
@@ -264,7 +274,7 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 #det_image_np = cv2.cvtColor(det_image_np, cv2.COLOR_RGB2BGR)
                 imwrite( result_save_fullpath_ch, det_image_np)
                 
-        if category_index[cindex]['name'] == 'hReg' :
+        elif category_index[cindex]['name'] == 'hReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if REG_CRNN_MODEL_USE :
                 #plt.imshow(det_image_np)
@@ -289,6 +299,9 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                     ch = ch2
                     prob = probs2   
                 category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
+                label = REV_HCLASS_DIC[ch]
+                label_index = list(CLASS_DIC.keys()).index(label)
+                class_dic_id_list.append(label_index)
                 #검시 확률을 업데이트 한다.
                 detections['detection_scores'][index] = prob
                 print('H지역 {} 확률 {:.2f}'.format(ch,prob*100))  
@@ -296,8 +309,11 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                 ch ,prob= hr_det_fn(hr_det_model,det_image_np,hr_thresh_hold=HR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_HCLASS_DIC[ch]
                 detections['detection_scores'][index] = prob
+                label = REV_HCLASS_DIC[ch]
+                label_index = list(CLASS_DIC.keys()).index(label)
+                class_dic_id_list.append(label_index)
                 twoLinePlate = True
-        if category_index[cindex]['name'] == 'vReg' :
+        elif category_index[cindex]['name'] == 'vReg' :
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if REG_CRNN_MODEL_USE :
                 #CRNN 모델을 사용하여 문자를 추출합니다.
@@ -322,14 +338,20 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                     prob = probs2
                     
                 category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
+                label = REV_VCLASS_DIC[ch]
+                label_index = list(CLASS_DIC.keys()).index(label)
+                class_dic_id_list.append(label_index)
                 #검시 확률을 업데이트 한다.
                 detections['detection_scores'][index] = prob
                 print('V지역 {} 확률 {:.2f}'.format(ch,prob*100))
             else:
                 ch = vr_det_fn(vr_det_model,det_image_np, vr_thresh_hold=VR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_VCLASS_DIC[ch]
+                label = REV_VCLASS_DIC[ch]
+                label_index = list(CLASS_DIC.keys()).index(label)
+                class_dic_id_list.append(label_index)
                 detections['detection_scores'][index] = prob
-        if category_index[cindex]['name'] == 'oReg':
+        elif category_index[cindex]['name'] == 'oReg':
             det_image_np = extract_sub_image(image_np,detections['detection_boxes'][index],IMG_SIZE,IMG_SIZE,pad=False)
             if REG_CRNN_MODEL_USE :
                 #CRNN 모델을 사용하여 문자를 추출합니다.
@@ -354,6 +376,9 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
                     ch = ch2
                     prob = probs2    
                 category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
+                label = REV_OCLASS_DIC[ch]
+                label_index = list(CLASS_DIC.keys()).index(label)
+                class_dic_id_list.append(label_index)
                 #검시 확률을 업데이트 한다.
                 detections['detection_scores'][index] = prob
                 print('O지역 {} 확률 {:.2f}'.format(ch,prob*100))
@@ -361,10 +386,18 @@ def plate_number_detect_fn(models, imageRGB, category_index,platetype_index,resu
             else:
                 ch = or_det_fn(or_det_model,det_image_np, or_thresh_hold=OR_THRESH_HOLD)
                 category_index_temp[cindex]['name'] = REV_OCLASS_DIC[ch]
+                label = REV_OCLASS_DIC[ch]
+                label_index = list(CLASS_DIC.keys()).index(label)
+                class_dic_id_list.append(label_index)
                 detections['detection_scores'][index] = prob
                 twoLinePlate = True
+        else:
+            ch = str(cindex % 10)
+            label = REV_CLASS_DIC[ch]
+            label_index = list(CLASS_DIC.keys()).index(label)
+            class_dic_id_list.append(label_index)
     
-    plate_str, plateTable, plate2line, platetype_index =  predictPlateNumberODAPI(detections,platetype_index,category_index_temp, CLASS_DIC, twoLinePlate=twoLinePlate)
+    plate_str, plateTable, plate2line, platetype_index =  predictPlateNumberODAPI(detections,class_dic_id_list,platetype_index,category_index_temp, CLASS_DIC, twoLinePlate=twoLinePlate)
     
     if show_image :
         plt.imshow(image_np_with_detections)

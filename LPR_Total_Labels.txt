@@ -12,6 +12,7 @@ type10,plate
 type11,plate
 type12,plate
 type13,plate
+plate,plate
 n1,1
 n2,2
 n3,3
@@ -115,6 +116,7 @@ Hap,합
 Bae,배
 Hyphen,-
 Cml,○
+Char,Char
 vSeoul,서울
 vIncheon,인천
 vBuSan,부산
@@ -133,6 +135,7 @@ vGyeongNam,경남
 vJeJu,제주
 vUlSan,울산
 vDiplomacy,외교
+vReg,vReg
 hSeoul,서울
 hIncheon,인천
 hBuSan,부산
@@ -151,6 +154,7 @@ hGyeongNam,경남
 hJeJu,제주
 hUlSan,울산
 hDiplomacy,외교
+hReg,hReg
 OpSeoul,서울
 OpIncheon,인천
 OpBuSan,부산
@@ -168,6 +172,7 @@ OpGyeongBuk,경북
 OpGyeongNam,경남
 OpJeJu,제주
 OpUlSan,울산
+oReg,oReg
 Seoul6,서울
 Incheon6,인천
 BuSan6,부산

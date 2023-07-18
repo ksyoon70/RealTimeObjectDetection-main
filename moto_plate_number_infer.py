@@ -64,7 +64,7 @@ CH_THRESH_HOLD = 0.7
 MOTO_CH_THRESH_HOLD = 0.4
 HR_THRESH_HOLD = 0.5
 MOTO_HR_THRESH_HOLD = 0.4
-DEFAULT_LABEL_FILE = "./LPR_Labels2.txt"  #라벨 파일이름
+DEFAULT_LABEL_FILE = "./LPR_PlateImage_Labels.txt"  #라벨 파일이름
 #========================
 WORKSPACE_PATH = os.path.join(ROOT_DIR,'Tensorflow','workspace')
 ANNOTATION_PATH = os.path.join(WORKSPACE_PATH,'annotations')
@@ -105,7 +105,7 @@ def moto_number_det_init_fn():
     CLASS_DIC = dict(zip(LABEL_FILE_CLASS, LABEL_FILE_HUMAN_NAMES))
     
     global REV_CLASS_DIC
-    REV_CLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[LABEL_FILE_HUMAN_NAMES.index('가'):LABEL_FILE_HUMAN_NAMES.index('배') + 1] + LABEL_FILE_HUMAN_NAMES[LABEL_FILE_HUMAN_NAMES.index('강'):LABEL_FILE_HUMAN_NAMES.index('흥') + 1] ,LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('Ga'):LABEL_FILE_CLASS.index('Cml') + 1] + LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('Gang'):LABEL_FILE_CLASS.index('Heung') + 1]))
+    REV_CLASS_DIC = dict(zip(LABEL_FILE_HUMAN_NAMES[LABEL_FILE_HUMAN_NAMES.index('가'):LABEL_FILE_HUMAN_NAMES.index('○') + 1] + LABEL_FILE_HUMAN_NAMES[LABEL_FILE_HUMAN_NAMES.index('강'):LABEL_FILE_HUMAN_NAMES.index('흥') + 1] ,LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('Ga'):LABEL_FILE_CLASS.index('Cml') + 1] + LABEL_FILE_CLASS[LABEL_FILE_CLASS.index('Gang'):LABEL_FILE_CLASS.index('Heung') + 1]))
     REV_CLASS_DIC['x'] = 'x'
     
     global REV_HCLASS_DIC

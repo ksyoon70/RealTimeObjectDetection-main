@@ -47,7 +47,12 @@ class JsonMng:
                 str =  CLASS_DIC[label]
             else:
                 label = category_index[class_index]['name']
-                str =  CLASS_DIC[label]
+                #str =  CLASS_DIC[label]
+                label_index = int(plateTable[ix][-1])
+                label_key = list(CLASS_DIC.keys())[label_index]
+                str = CLASS_DIC[label_key]
+                if str == '○':      #예외처리
+                    label = 'Cml'
             if not str == 'x' :  # x가 나오면 인식한게 아니기 때문.
                 if class_index == 11 :  #용도문자
                     self.json_data['usage'] = str

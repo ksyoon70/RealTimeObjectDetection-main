@@ -21,7 +21,7 @@ import argparse
 from plate_recog_common import *
 
 #----------------------------
-DEFAULT_LABEL_FILE = "./LPR_Labels2.txt"  #라벨 파일이름
+DEFAULT_LABEL_FILE = "./LPR_PlateImage_Labels.txt"  #라벨 파일이름
 CHAR_MODEL_DIR = 'm_char_model'
 MODEL_FILE_NAME = None #'character_resnet50_20220820-002035_model_epoch_35_val_acc_0.9025.h5'
 CMODEL_PATH = None

@@ -442,7 +442,7 @@ def checkConsecutive(l):
     return sorted(l) == list(range(min(l), max(l)+1))
             
 #Object Detection API에서의  번호/문자 인식 내용을 추출 한다.    
-def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, twoLinePlate) :
+def predictPlateNumberODAPI(detect, plate_class_id,platetype_index, category_index, CLASS_DIC, twoLinePlate) :
     
     objTable = []
     
@@ -455,24 +455,43 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
     lobox_avr = 0
     num_cnt = 0                          #숫자 갯수
     
+
+    classKeys = list(CLASS_DIC.keys())
+    CmlIndx =  classKeys.index('Cml')           #Cml 인덱스를 구한다.
+        
+    #Cml이 있으면 objTable에서 삭제한다.
+    CmlObjTable = []    
+    
+    
     num_detections = detect['num_detections']
     plate2line = False
     plateTable = []
     valid_detections = 0
+    Yong = False
+
     for i in range(0,num_detections) :
         box = detect['detection_boxes'][i]
         class_id = detect['detection_classes'][i] + 1
         score = detect['detection_scores'][i]
-        item = [class_id, score, box[0],box[1],box[2],box[3]]
+        ch_class_id = plate_class_id[i]
+        item = [class_id, score, box[0],box[1],box[2],box[3],ch_class_id]
         if class_id <= 10 :
             if score > NUM_THRESH_HOLD :
                 objTable.append(item)
                 valid_detections += 1
         else :
-            objTable.append(item)
-            valid_detections += 1
-    
-    objTable =np.round(np.array(objTable).astype(np.float64),4)
+            if ch_class_id == CmlIndx:
+                CmlObjTable.append(item)
+                Yong = True
+            else:
+                objTable.append(item)            
+                valid_detections += 1
+            
+   
+    #numpy change
+    #objTable =np.round(np.array(objTable).astype(np.float64),4)
+    objTable = np.array(objTable)
+    CmlObjTable = np.array(CmlObjTable)
     
     print('유효 번호판 글자 검지갯수 {}'.format(valid_detections))
 
@@ -525,7 +544,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                 onelineTable = np.array(onelineTable)
                 twolineTalbe = np.array(twolineTalbe)
                 if onelineTable.size :
-                    onelineTable = onelineTable[onelineTable[:,-1].argsort()] #onelineTable[:,3].argsort() 순서대로 인덱스를 반환
+                    onelineTable = onelineTable[onelineTable[:,-2].argsort()] #onelineTable[:,3].argsort() 순서대로 인덱스를 반환
                     if onelineTable[0,0] == 13:  # hReg 첫글자 가로 지역문자이면...
                         res = onelineTable[1:,:]
                         if res.shape[0] > 2:
@@ -537,7 +556,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
                             onelineTable = arr
                             
                 if twolineTalbe.size :
-                    twolineTalbe = twolineTalbe[twolineTalbe[:,-1].argsort()]
+                    twolineTalbe = twolineTalbe[twolineTalbe[:,-2].argsort()]
                     twolineTalbescore = twolineTalbe[:,0]
                     result = np.where(twolineTalbescore == 11)
                     #용도문자 이후 오른쪽 숫자가 4개 이상이면 스코어에 따라서 삭제한다.
@@ -565,7 +584,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
     
             else:       # 1줄 번호판에 대한 로직
                     onelineTable = objTable
-                    plateTable = onelineTable[onelineTable[:,-1].argsort()]
+                    plateTable = onelineTable[onelineTable[:,-2].argsort()]
                     onelineTableclass = plateTable[:,0]
                     result = np.where(onelineTableclass == 11) #11은 Char
                     #용도문자 이후 오른쪽 숫자가 4개 이상이면 스코어에 따라서 삭제한다.
@@ -621,8 +640,9 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
             
             for i in range(0,num_detections) :
                 class_index = int(plateTable[i][0])
-                label = category_index[class_index]['name']
-                plate_str = plate_str + CLASS_DIC[label]
+                label_index = int(plateTable[i][-1])
+                label_key = list(CLASS_DIC.keys())[label_index]
+                plate_str = plate_str + CLASS_DIC[label_key]
                 if class_index == 11:
                     uChar = True
                 elif class_index == 12:
@@ -639,6 +659,9 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
     else:   # 예외처리
         plateTable = objTable
     
+    if Yong :
+        plate_str = plate_str + '영'
+        plateTable = np.concatenate([CmlObjTable,objTable],axis=0)
            
     #번호판 타입을 결정한다.
     if not plate2line :
@@ -652,7 +675,7 @@ def predictPlateNumberODAPI(detect, platetype_index, category_index, CLASS_DIC, 
             platetype_index = 3
     else :
         # 2자리 번호판이면.
-        if oReg == True:        # 영 번호판이면.
+        if Yong == True:        # 영 번호판이면.
             platetype_index = 6
         elif hReg == True:
             platetype_index = 1 # type1과 type2가 있지만 일단 type1로 설정
