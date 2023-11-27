@@ -43,11 +43,11 @@ logging.getLogger('tensorflow').disabled = True
 # 여기의 내용을 용도에 맞게 수정한다.
 dataset_category='car-plate'  #plate
 test_dir_name = 'test'
-show_image = True
+show_image = False
 save_image = False
 save_true_recog_image = False          #정인식 영상 저장 여부
 add_platename = True               #번호인식 결과를 파일이름에 붙일지 여부
-THRESH_HOLD = 0.5
+THRESH_HOLD = 0.4
 PLATE_THRESH_HOLD = 0.4             
 IS_RESULT_DIR_REMOVE = True #결과 디렉토리 삭제 여부
 MAKE_JSON_FILE  = True                 #json 파일 생성 여부

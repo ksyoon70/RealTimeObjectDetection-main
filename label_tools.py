@@ -659,7 +659,7 @@ def predictPlateNumberODAPI(detect, plate_class_id,platetype_index, category_ind
     else:   # 예외처리
         plateTable = objTable
     
-    if Yong :
+    if Yong and len(objTable):
         plate_str = plate_str + '영'
         plateTable = np.concatenate([CmlObjTable,objTable],axis=0)
            

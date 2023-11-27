@@ -23,7 +23,7 @@ import pandas as pd
 
 CUSTOM_MODEL_NAME = 'my_ssd_mobnet' 
 filterFileName =  'LPR_Filtermap.txt'  #None #"filter.map"  #"LPR_Filtermap.txt"  #필터 맵 파일이다. 사용하지않으면 존재하지 않는 파일명을 넣는다.
-dataset_category=  'plateimage' #'plate' #'car-plate'  #'plateimage'
+dataset_category=  'car-plate_320' #'plate' #'car-plate'  #'plateimage'
 bFilterMap = None               # 필터 사용여부
 BATCH_SIZE = 16
 #-----------------------------------------------------------------------
@@ -46,6 +46,10 @@ elif dataset_category == 'car-plate':
     fsLabelFileName =  "LPR_Car-Plate_Labels_2.txt"
     bFilterMap = False
     model = 'ssd_640'
+elif dataset_category == 'car-plate_320':
+    fsLabelFileName =  "LPR_Car-Plate_Labels_2.txt"
+    bFilterMap = False
+    model = 'ssd_320'
     
 #여기서 사용할 모델을 고른다.
 if model == 'ssd_320':

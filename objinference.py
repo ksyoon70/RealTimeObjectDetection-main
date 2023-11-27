@@ -25,7 +25,7 @@ import time
 
 #========================
 # 여기의 내용을 용도에 맞게 수정한다.
-dataset_category= 'car-plate' #'car-plate' #'plate' #'tracking'
+dataset_category= 'car-plate_320' #'car-plate' #'plate' #'tracking'
 test_dir_name =  'test'
 show_image = True
 save_image = True
@@ -67,6 +67,8 @@ LABEL_FILE = None
 
 if dataset_category == 'car-plate':
     #LABEL_FILE = 'car-plate_map.pbtxt'
+    LABEL_FILE = 'label_map.pbtxt'
+if dataset_category == 'car-plate_320':
     LABEL_FILE = 'label_map.pbtxt'
 elif dataset_category == 'plate':
     LABEL_FILE = 'platelabel_map.pbtxt'
